@@ -1,18 +1,27 @@
-void a() {
-    /* Your code */
+#define _GNU_SOURCE
+
+#include <stdio.h>
+#include <dlfcn.h>
+
+static void* (*real_malloc)(size_t)=NULL;
+
+static void mtrace_init(void)
+{
+    real_malloc = dlsym(RTLD_NEXT, "malloc");
+    if (NULL == real_malloc) {
+        fprintf(stderr, "Error in `dlsym`: %s\n", dlerror());
+    }
 }
 
-void a_special( char const * caller_name ) {
-    printf( "a was called from %s\n", caller_name );
-    a();
-}
+void *malloc(size_t size)
+{
+    if(real_malloc==NULL) {
+        mtrace_init();
+    }
 
-#define a() a_special(__func__)
-
-void b() {
-    a();
-}
-
-int main() {
-    b();
+    void *p = NULL;
+    fprintf(stderr, "malloc(%d)", size);
+    p = real_malloc(size);
+    fprintf(stderr, "%p\n", p);
+    return p;
 }

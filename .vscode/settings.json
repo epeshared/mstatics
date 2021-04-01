@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "mstatics.h": "c",
+        "dlfcn.h": "c"
+    }
+}

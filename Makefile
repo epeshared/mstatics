@@ -1,15 +1,19 @@
-SRC=src
-BIN=bin
+SRC=/home/xtang/mstatics/src
+LIB=/home/xtang/mstatics/lib
+TEST_DIR=test
 HEADERS=mstatics.h
 
-default: mstatics
+all: libs mtest
+libs: libmstatics.so
 
-mstatics.o: $(SRC)/mstatics.c $(SRC)/$(HEADERS)
-	gcc -c $(SRC)/mstatics.c -o $(SRC)/mstatics.o
+mtest:$(TEST_DIR)/test.c
+	gcc $(TEST_DIR)/test.c -O3 -o $(TEST_DIR)/mtest
 
-mstatics: mstatics.o
-	gcc $(SRC)/mstatics.o -o $(BIN)/mstatics
+libmstatics.so: $(SRC)/mstatics.c $(SRC)/$(HEADERS)
+	gcc -fPIC -shared $(SRC)/mstatics.c -ldl -O3 -o $(LIB)/libmstatics.so 
 
 clean:
+	-rm -f $(LIB)/libmstatics.so
 	-rm -f $(SRC)/mstatics.o
-	-rm -f $(BIN)/mstatics
+	-rm -f $(TEST_DIR)/test.o
+	-rm -f $(TEST_DIR)/mtest

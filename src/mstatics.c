@@ -2,11 +2,11 @@
 
 #include <stdio.h>
 #include <dlfcn.h>
-#include "mstatics.h"
 
+/********************** malloc **********************/
 static void* (*real_malloc)(size_t)=NULL;
 
-static void mtrace_init(void) {
+static void malloc_init(void) {
     real_malloc = dlsym(RTLD_NEXT, "malloc");
     if (NULL == real_malloc) {
         fprintf(stderr, "Error in `dlsym`: %s\n", dlerror());
@@ -16,7 +16,7 @@ static void mtrace_init(void) {
 
 void *malloc(size_t size) {
     if(real_malloc==NULL) {
-        mtrace_init();
+        malloc_init();
     }
     
     void *p = NULL;
@@ -28,8 +28,7 @@ void *malloc(size_t size) {
 
 void *malloc_internal(size_t size, char const * caller_name ) {
     printf( "malloc was called from %s\n", caller_name );
-    malloc(size);
+    return malloc(size);
 }
 
-#define malloc(size) malloc_internal(size, __func__)
-
+#define malloc(size) malloc_internal(size, __function__)

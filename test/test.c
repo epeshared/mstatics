@@ -3,7 +3,7 @@
 
 int exe() {
     printf("exe malloc\n");
-    int i=100;
+    int i=3*1024;
     char * buffer;
 
     buffer = (char*) malloc (i+1);
@@ -14,11 +14,13 @@ int exe() {
         buffer[n]=rand()%26+'a';
     buffer[i]='\0';
 
-  printf ("Random string: %s\n",buffer);
+  //printf ("Random string: %s\n",buffer);
   free (buffer);
   return 0;
 }
 
 int main() {
-    exe();
+    for (int i = 0;i < 5; i++) {
+        exe();
+    }
 }

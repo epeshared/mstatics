@@ -4,6 +4,8 @@
 #include <dlfcn.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdlib.h>
+#include <inttypes.h>
 #include <sys/time.h>   // for gettimeofday()
 #include <unistd.h>     // for sleep()
 #include "mstatics.h"
@@ -30,7 +32,7 @@ typedef enum data_size {
     invalid_data_size_type = 1000
 }data_size_type;
 
-static const char *data_size_str[] = {
+static char *data_size_str[] = {
     "1-64", "65-128", "129-256", "257-512",
     "513-1K", "1K-2K", "2K-4K","4K-8K", "8K-16K",
     "16K-32K", "32K-64K", "128K-256K", "256K-512K",
@@ -102,12 +104,68 @@ enum data_size check_data_size(size_t size) {
     return ds;
 }
 
-
 /********************** malloc **********************/
 
-static malloc_statics_type malloc_statics[17];
+static malloc_statics_type malloc_statics[GR_4M + 1];
 
 static void* (*real_malloc)(size_t)=NULL;
+
+/********************** file ***********************/
+static struct timeval last_flush_time;
+static double flush_interval = 1000.0f;
+static int flush_init = 0;
+
+static const char* FLUSH_INTERVAL = "FLUSH_INTERVAL";
+static const char* MSTATICS_OUT_DIR = "MSTATICS_OUT_DIR";
+static char *malloc_latency_file_name = "malloc_latency.data";
+static FILE *malloc_latency_file = NULL; 
+static char *malloc_interval_file_name = "malloc_interval.data";
+static FILE *malloc_interval_file = NULL;
+
+char* out_dir = "./";
+
+void init_flush_func() {    
+    if (!flush_init) {
+        flush_init = 1;
+
+        gettimeofday(&last_flush_time, NULL);
+
+        char* tmp_out_dir = getenv (MSTATICS_OUT_DIR);
+        if (tmp_out_dir != NULL) {
+            out_dir = (char*) real_malloc(strlen(tmp_out_dir));
+            strcpy(out_dir, tmp_out_dir);
+        }
+        
+        tmp_out_dir = malloc_latency_file_name;
+        malloc_latency_file_name = (char*) real_malloc(strlen(out_dir) + strlen(tmp_out_dir));
+        sprintf(malloc_latency_file_name, "%s%s", out_dir, tmp_out_dir);        
+        fprintf(stderr, "malloc_latency_file_name: %s\n", malloc_latency_file_name);
+
+        tmp_out_dir = malloc_interval_file_name;
+        malloc_interval_file_name = (char*) real_malloc(strlen(out_dir) + strlen(tmp_out_dir));
+        sprintf(malloc_interval_file_name, "%s%s", out_dir, tmp_out_dir);        
+        fprintf(stderr, "malloc_latency_file_name: %s\n", malloc_interval_file_name);        
+
+        char* tmp_flush_interval = getenv (FLUSH_INTERVAL);
+        if (tmp_flush_interval != NULL) {
+            flush_interval = atof(tmp_flush_interval);
+        }
+        fprintf(stderr, "flush_interval: %f\n", flush_interval);
+
+        malloc_latency_file = fopen(malloc_latency_file_name,"w");
+        if (malloc_latency_file== NULL) {
+            fprintf(stderr, "Error opening malloc_latency_file file!\n");
+            exit(1);
+        }
+
+        malloc_interval_file = fopen(malloc_interval_file_name,"w");
+        if (malloc_interval_file== NULL) {
+            fprintf(stderr, "Error opening malloc_interval_file file!\n");
+            exit(1);
+        }
+    }    
+}
+
 
 static void malloc_init(void) {
     fprintf(stderr, "malloc init\n");
@@ -125,6 +183,8 @@ static void malloc_init(void) {
         malloc_statics[i].interval_list.head = NULL;
         malloc_statics[i].interval_list.tail = NULL;
     }
+
+    init_flush_func();
 }
 
 static void put_to_time_list(double time, time_list* list) {
@@ -147,7 +207,7 @@ static void put_to_time_list(double time, time_list* list) {
 
 typedef void (*iterator_call_back)(struct time_node* _node);
 
-void print_time_node_value(struct time_node* _node) {
+static void print_time_node_value(struct time_node* _node) {
     fprintf(stderr, "%fus ", _node->value);
     if (_node->next == NULL) {
         fprintf(stderr, "\n");
@@ -165,10 +225,64 @@ static void print_time_list(time_list* list) {
     iterator_time_list(list, print_time_node_value);
 }
 
+static char* time_list_to_string(time_list* list) {
+    char* list_string = NULL;
+    size_t list_string_len = 0;
+    for (struct time_node* _node = list->head; _node != NULL; ) {
+        char value_str[50];
+        sprintf(value_str, "%f.2f ", _node->value);
+        size_t value_str_len = strlen(value_str);
+
+        char* last_list_string = list_string;
+        list_string = real_malloc(list_string_len + value_str_len);
+        
+        if (last_list_string != NULL) {
+            sprintf(list_string, "%s%s", last_list_string, value_str);
+            free(last_list_string);  
+        } else {
+            sprintf(list_string, "%s", value_str);            
+        }
+
+         _node = _node->next;
+    }
+
+    return list_string;
+}
+
+static char* malloc_statics_to_file() {
+    char* malloc_statics_string = NULL;
+    size_t malloc_statics_string_len = 0;
+    for (int i = 0;i <= GR_4M; i++) {
+        char* malloc_statics_string = NULL;
+        size_t malloc_statics_string_len = 0;        
+
+        malloc_statics_type static_item = malloc_statics[i];
+
+        char* malloc_size_str = data_size_str[i];
+        size_t malloc_size_str_len = strlen(malloc_size_str) + 1; // plush one bit for space char
+        
+        char count_str[21];
+        sprintf(count_str, "%", PRIu64, static_item.count);
+        size_t count_str_len = strlen(count_str) + 1; // plush one bit for space char
+
+        char* latency_str = time_list_to_string(&(malloc_statics[i].latency_list));
+        size_t latency_str_len = strlen(latency_str) + 1; // plush one bit for /n char
+
+        char* interval_str = time_list_to_string(&(malloc_statics[i].interval_list));
+        size_t interval_str_len = strlen(latency_str) + 1; // plush one bit for /n char
+
+        malloc_statics_string = real_malloc(malloc_size_str_len + count_str_len + latency_str_len);
+
+        free(latency_str);
+        free(interval_str);
+    }
+}
+
+
 void *malloc(size_t size) {
     fprintf(stderr, "***********************malloc***************************************\n");
-    if(real_malloc==NULL) {
-        malloc_init();
+    if(real_malloc==NULL) {      
+        malloc_init();        
     }
 
     enum data_size ds = check_data_size(size);
@@ -203,6 +317,7 @@ void *malloc(size_t size) {
         malloc_statics[ds].last_called_time = t1;  
     }
     fprintf(stderr, "interval: ");print_time_list( &(malloc_statics[ds].interval_list));
+    
     return p;
 }
 

@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "mstatics.h": "c",
-        "dlfcn.h": "c"
+        "dlfcn.h": "c",
+        "type_traits": "c"
     }
 }

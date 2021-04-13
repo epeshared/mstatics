@@ -8,7 +8,42 @@
 #include <inttypes.h>
 #include <sys/time.h>   // for gettimeofday()
 #include <unistd.h>     // for sleep()
+#include <signal.h>
 #include "mstatics.h"
+
+/********************** log file triger ******************/
+
+static uint64_t malloc_times = 0;
+static uint64_t triger = 10;
+static int file_is_opened = 0;
+
+/********************** log ******************************/
+static const char *level_strings[] = {
+    "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"
+};
+
+static const char *log_model_strings[] = {
+    "malloc"
+};
+
+#define DEBUG 0
+#define log_log(fmt, ...) \
+    do { if (DEBUG) fprintf(stderr, "%s:%d:%s(): " fmt, __FILE__, \
+        __LINE__, __func__, __VA_ARGS__); } while (0)
+
+#define LOG_MALLOC 0
+#ifdef LOG_MALLOC
+#define DEBUG_MALLOC(fmt, ...) \
+    do { if (LOG_MALLOC) fprintf(stderr, "[MALLOC] %s:%d:%s(): " fmt, __FILE__, \
+        __LINE__, __func__, __VA_ARGS__); } while (0)      
+#endif 
+
+#define LOG_FILE 0
+#ifdef LOG_FILE
+#define DEBUG_FILE(fmt, ...) \
+    do { if (LOG_FILE) fprintf(stderr, "[FILE] %s:%d:%s(): " fmt, __FILE__, \
+        __LINE__, __func__, __VA_ARGS__); } while (0)      
+#endif 
 
 /********************** define data type *****************/
 typedef enum data_size {
@@ -40,7 +75,7 @@ static char *data_size_str[] = {
 };
 
 struct time_node{
-    double value;
+    uint64_t value;
     struct time_node* next;
 } ;
 
@@ -100,7 +135,9 @@ enum data_size check_data_size(size_t size) {
         ds = _2M_4M_;
     } else if (size > 4 * 1024 * 1024) {
         ds = GR_4M;
-    } 
+    } else {
+        ds = GR_4M;
+    }
     return ds;
 }
 
@@ -138,29 +175,23 @@ void init_flush_func() {
         
         tmp_out_dir = malloc_latency_file_name;
         malloc_latency_file_name = (char*) real_malloc(strlen(out_dir) + strlen(tmp_out_dir));
-        sprintf(malloc_latency_file_name, "%s%s", out_dir, tmp_out_dir);        
-        //fprintf(stderr, "malloc_latency_file_name: %s\n", malloc_latency_file_name);
+        sprintf(malloc_latency_file_name, "%s%s", out_dir, tmp_out_dir);
+        DEBUG_FILE("malloc_latency_file_name: %s\n", malloc_latency_file_name);     
 
         tmp_out_dir = malloc_interval_file_name;
         malloc_interval_file_name = (char*) real_malloc(strlen(out_dir) + strlen(tmp_out_dir));
         sprintf(malloc_interval_file_name, "%s%s", out_dir, tmp_out_dir);        
-        //fprintf(stderr, "malloc_latency_file_name: %s\n", malloc_interval_file_name);        
-
-        // char* tmp_flush_interval = getenv (FLUSH_INTERVAL);
-        // if (tmp_flush_interval != NULL) {
-        //     flush_interval = atof(tmp_flush_interval);
-        // }
-        //fprintf(stderr, "flush_interval: %f\n", flush_interval);
+        DEBUG_FILE("malloc_latency_file_name: %s\n", malloc_interval_file_name);        
 
         malloc_latency_file = fopen(malloc_latency_file_name,"w");
         if (malloc_latency_file== NULL) {
-            fprintf(stderr, "Error opening malloc_latency_file file!\n");
+            DEBUG_FILE("Error opening malloc_latency_file file!\n" ,"");
             exit(1);
         }
 
         malloc_interval_file = fopen(malloc_interval_file_name,"w");
         if (malloc_interval_file== NULL) {
-            fprintf(stderr, "Error opening malloc_interval_file file!\n");
+            DEBUG_FILE("Error opening malloc_interval_file file!\n", "");
             exit(1);
         }
     }    
@@ -168,7 +199,7 @@ void init_flush_func() {
 
 
 static void malloc_init(void) {
-    //fprintf(stderr, "malloc init\n");
+    DEBUG_MALLOC("malloc init\n", "");
     real_malloc = dlsym(RTLD_NEXT, "malloc");
     if (NULL == real_malloc) {
         fprintf(stderr, "Error in `dlsym`: %s\n", dlerror());
@@ -187,7 +218,7 @@ static void malloc_init(void) {
     init_flush_func();
 }
 
-static void put_to_time_list(double time, time_list* list) {
+static void put_to_time_list(uint64_t time, time_list* list) {
     struct time_node* _node = (struct time_node*)real_malloc(sizeof(struct time_node));
     //memset((void*)_node, 0, sizeof(time_node));
     _node->value = time;
@@ -208,9 +239,9 @@ static void put_to_time_list(double time, time_list* list) {
 typedef void (*iterator_call_back)(struct time_node* _node);
 
 static void print_time_node_value(struct time_node* _node) {
-    fprintf(stderr, "%fus ", _node->value);
+    DEBUG_MALLOC("%dus ", _node->value);
     if (_node->next == NULL) {
-        fprintf(stderr, "\n");
+        DEBUG_MALLOC("\n", "");
     }
 }
 
@@ -230,12 +261,12 @@ static char* time_list_to_string(time_list* list) {
     size_t list_string_len = 0;
     for (struct time_node* _node = list->head; _node != NULL; ) {
         char value_str[50];
-        sprintf(value_str, "%f ", _node->value);
+        sprintf(value_str, "%d ", _node->value);
         size_t value_str_len = strlen(value_str);
 
         char* last_list_string = list_string;
-        //fprintf(stderr, "list_string_len: %d\n", list_string_len);
-        //fprintf(stderr, "value_str_len: %d\n", value_str_len);
+        DEBUG_MALLOC("list_string_len: %d", list_string_len);
+        DEBUG_MALLOC("value_str_len: %d", value_str_len);
         list_string = (char *)real_malloc(list_string_len + value_str_len + 1);
         list_string_len += value_str_len;
         
@@ -245,7 +276,6 @@ static char* time_list_to_string(time_list* list) {
         } else {
             sprintf(list_string, "%s", value_str);            
         }
-        //fprintf(stderr, "list_string: %s\n", list_string);
 
          _node = _node->next;
     }
@@ -253,12 +283,35 @@ static char* time_list_to_string(time_list* list) {
     return list_string;
 }
 
+void sig_term_handler(int signum, siginfo_t *info, void *ptr) {
+    fprintf(stderr, "sig_term_handler%d\n", signum);
+    DEBUG_FILE("Caught signum %d\n", signum);
+    exit(signum);
+}
+
+void catch_sigterm() {
+    static struct sigaction _sigact;
+
+    memset(&_sigact, 0, sizeof(_sigact));
+    _sigact.sa_sigaction = sig_term_handler;
+    _sigact.sa_flags = SA_SIGINFO;
+
+    sigaction(SIGTERM, &_sigact, NULL);
+}
+
+void handle_sigint(int sig) {
+    fprintf(stderr, "Caught singal %d\n", sig);
+    DEBUG_FILE("Caught singal %d\n", sig);
+    exit(sig);
+}
+
 void malloc_statics_to_file() {
-    //fprintf(stderr, "************************** to file **************************\n");
+    DEBUG_MALLOC("************************** to file **************************\n", "");
     char* malloc_statics_string = NULL;
     size_t malloc_statics_string_len = 0;
+    file_is_opened = 1;
     malloc_latency_file = fopen(malloc_latency_file_name,"w");
-    malloc_interval_file = fopen(malloc_interval_file_name,"w");
+    malloc_interval_file = fopen(malloc_interval_file_name,"w");    
     for (int i = 0;i <= GR_4M; i++) {
         char* latency_statics_string = NULL;
         char* interval_statics_string = NULL;
@@ -267,18 +320,17 @@ void malloc_statics_to_file() {
 
         char* malloc_size_str = data_size_str[i];
         size_t malloc_size_str_len = strlen(malloc_size_str) + 1; // plush one bit for space char
-        //fprintf(stderr, "---->malloc_size_str:%s\n", malloc_size_str);
+        DEBUG_MALLOC("---->malloc_size_str:%s\n", malloc_size_str);
                 
-        //fprintf(stderr, "static_item.count:%d\n", static_item.count);
         if (static_item.count != 0) {
             char count_str[21];
             sprintf(count_str, "%d", static_item.count);
             size_t count_str_len = strlen(count_str) + 1; // plush one bit for space char
-            //fprintf(stderr, "count_str:%s\n", count_str);
+            DEBUG_MALLOC("count_str:%s", count_str);
 
             char* latency_str = time_list_to_string(&(malloc_statics[i].latency_list));
             size_t latency_str_len = strlen(latency_str) + 1; // plush one bit for /n char
-            //fprintf(stderr, "latency_str:%s\n", latency_str);
+            DEBUG_MALLOC("latency_str:%s\n", latency_str);
             latency_statics_string = (char *)real_malloc(malloc_size_str_len + count_str_len + latency_str_len + 1);
             sprintf(latency_statics_string, "%s %s %s\n", malloc_size_str, count_str, latency_str);
             fprintf(malloc_latency_file, "%s", latency_statics_string);            
@@ -290,10 +342,8 @@ void malloc_statics_to_file() {
             char* interval_str = time_list_to_string(&(malloc_statics[i].interval_list));
             if (interval_str != NULL) {
                 size_t interval_str_len = strlen(interval_str) + 3; // plush one bit for /n char
-                //fprintf(stderr, "interval_str:%s\n", interval_str);
-                //fprintf(stderr, "interval_str_len:%d\n", interval_str_len);
+                DEBUG_MALLOC("interval_str:%s\n", interval_str);
                 interval_statics_string = (char*)real_malloc(malloc_size_str_len + count_str_len + interval_str_len + 1);
-                // fprintf(stderr, "malloc succesfull\n");
                 sprintf(interval_statics_string, "%s %s %s\n", data_size_str[i], count_str, interval_str);
                 fprintf(malloc_interval_file, "%s", interval_statics_string);
                 free(interval_str);                
@@ -303,24 +353,42 @@ void malloc_statics_to_file() {
             }                     
         }        
     }
+    
     fclose(malloc_latency_file);
     fclose(malloc_interval_file);
+    file_is_opened = 0;
 }
 
 void *malloc(size_t size) {
-    //fprintf(stderr, "***********************malloc***************************************\n");
+    DEBUG_MALLOC("***********************malloc***************************************\n", "");
     if(real_malloc==NULL) {      
         malloc_init();
-        atexit(malloc_statics_to_file);        
+        DEBUG_FILE("init exit function\n", "");
+        atexit(malloc_statics_to_file); 
+        // signal(SIGTERM, handle_sigint);
+        // signal(SIGILL, handle_sigint);
+        // signal(SIGINT, handle_sigint);
+        // signal(SIGABRT, handle_sigint);
+        // signal(SIGQUIT, handle_sigint);
+        // signal(SIGKILL, handle_sigint);
+        // signal(SIGSTOP, handle_sigint);
+        // catch_sigterm();       
     }
 
+    if (file_is_opened) {
+        return real_malloc(size);
+    }
+
+    DEBUG_MALLOC("malloc(%d)\n", size);
+
     enum data_size ds = check_data_size(size);
+    DEBUG_MALLOC("data_size(%d)\n", ds);
     malloc_statics[ds].count = malloc_statics[ds].count + 1;
 
-    //fprintf(stderr, "malloc %s count(%d)\n", data_size_str[ds], malloc_statics[ds].count);
+    DEBUG_MALLOC("malloc %s count(%d)\n", data_size_str[ds], malloc_statics[ds].count);
     
     void *p = NULL;
-    //fprintf(stderr, "malloc(%d)\n", size);
+    
     struct timeval t1, t2;
     double elapsedTime;
 
@@ -332,26 +400,36 @@ void *malloc(size_t size) {
 
     elapsedTime = (t2.tv_sec - t1.tv_sec);
     elapsedTime += (t2.tv_usec - t1.tv_usec);      
-    //fprintf(stderr, "elapsedTime: %f us.\n", elapsedTime);
+    DEBUG_MALLOC("elapsedTime: %f us.\n", elapsedTime);
 
     put_to_time_list(elapsedTime, &(malloc_statics[ds].latency_list));
-    //fprintf(stderr, "latency: ");print_time_list( &(malloc_statics[ds].latency_list));
+    //DEBUG_MALLOC("latency: \n", "");print_time_list( &(malloc_statics[ds].latency_list));
 
     if (malloc_statics[ds].count == 1) { // it is called at the first time, no interval is record
         malloc_statics[ds].last_called_time = t2;
     } else {// it is not called at the first time, caculate the interval from last called time
-        double interval = (t1.tv_sec - malloc_statics[ds].last_called_time.tv_sec);
+        uint64_t interval = (t1.tv_sec - malloc_statics[ds].last_called_time.tv_sec);
         interval += (t1.tv_usec -  malloc_statics[ds].last_called_time.tv_usec);
+        if (interval > 60 * 1000 * 1000) {
+            interval = 60 * 1000 * 1000;
+        }
         put_to_time_list(interval, &(malloc_statics[ds].interval_list));    
         malloc_statics[ds].last_called_time = t1;  
     }
-    //fprintf(stderr, "interval: ");print_time_list( &(malloc_statics[ds].interval_list));
-    
+    //DEBUG_MALLOC("interval: \n", "");print_time_list( &(malloc_statics[ds].interval_list));
+    //DEBUG_MALLOC("p: %d\n", p);
+    malloc_times++;
+    DEBUG_MALLOC("malloc_times: %d\n", malloc_times);
+    if (malloc_times >= triger) {
+        DEBUG_FILE("triger to write file\n", "");
+        malloc_statics_to_file();                    
+        malloc_times = 0;
+    }
     return p;
 }
 
 void *malloc_internal(size_t size, char const * caller_name ) {
-    //printf( "malloc was called from %s\n", caller_name );
+    DEBUG_MALLOC( "malloc was called from %s\n", caller_name );
     return malloc(size);
 }
 

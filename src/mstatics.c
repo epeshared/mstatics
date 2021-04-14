@@ -9,7 +9,14 @@
 #include <sys/time.h>   // for gettimeofday()
 #include <unistd.h>     // for sleep()
 #include <signal.h>
+#include <pthread.h>
 #include "mstatics.h"
+
+/********************** lock *****************************/
+
+static pthread_mutex_t malloc_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t memset_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t memmove_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /********************** log file triger ******************/
 
@@ -176,7 +183,8 @@ char* out_dir = "./";
 
 static void malloc_init(void);
 
-void init_flush_func() {    
+void init_flush_func() { 
+    DEBUG_FILE("init_flush_func\n", "");   
     if (!flush_init) {
         flush_init = 1;
 
@@ -203,17 +211,17 @@ void init_flush_func() {
         sprintf(malloc_interval_file_name, "%s%s", out_dir, tmp_out_dir);        
         DEBUG_FILE("malloc_latency_file_name: %s\n", malloc_interval_file_name);        
 
-        malloc_latency_file = fopen(malloc_latency_file_name,"w");
-        if (malloc_latency_file== NULL) {
-            DEBUG_FILE("Error opening malloc_latency_file file!\n" ,"");
-            exit(1);
-        }
+        // malloc_latency_file = fopen(malloc_latency_file_name,"w");
+        // if (malloc_latency_file== NULL) {
+        //     DEBUG_FILE("Error opening malloc_latency_file file!\n" ,"");
+        //     exit(1);
+        // }
 
-        malloc_interval_file = fopen(malloc_interval_file_name,"w");
-        if (malloc_interval_file== NULL) {
-            DEBUG_FILE("Error opening malloc_interval_file file!\n", "");
-            exit(1);
-        }
+        // malloc_interval_file = fopen(malloc_interval_file_name,"w");
+        // if (malloc_interval_file== NULL) {
+        //     DEBUG_FILE("Error opening malloc_interval_file file!\n", "");
+        //     exit(1);
+        // }
 
         /******/
         tmp_out_dir = memset_latency_file_name;
@@ -226,17 +234,17 @@ void init_flush_func() {
         sprintf(memset_interval_file_name, "%s%s", out_dir, tmp_out_dir);        
         DEBUG_FILE("memset_latency_file_name: %s\n", memset_interval_file_name);        
 
-        memset_latency_file = fopen(memset_latency_file_name,"w");
-        if (memset_latency_file== NULL) {
-            DEBUG_FILE("Error opening memset_latency_file file!\n" ,"");
-            exit(1);
-        }
+    //     memset_latency_file = fopen(memset_latency_file_name,"w");
+    //     if (memset_latency_file== NULL) {
+    //         DEBUG_FILE("Error opening memset_latency_file file!\n" ,"");
+    //         exit(1);
+    //     }
 
-        memset_interval_file = fopen(memset_interval_file_name,"w");
-        if (memset_interval_file== NULL) {
-            DEBUG_FILE("Error opening memset_interval_file file!\n", "");
-            exit(1);
-        }        
+    //     memset_interval_file = fopen(memset_interval_file_name,"w");
+    //     if (memset_interval_file== NULL) {
+    //         DEBUG_FILE("Error opening memset_interval_file file!\n", "");
+    //         exit(1);
+    //     }        
     }    
 }
 
@@ -246,7 +254,7 @@ static void malloc_init(void) {
     real_malloc = dlsym(RTLD_NEXT, "malloc");
     if (NULL == real_malloc) {
         fprintf(stderr, "Error in `dlsym`: %s\n", dlerror());
-    }    
+    }
 }
 
 static void put_to_time_list(uint64_t time, time_list* list) {
@@ -379,8 +387,9 @@ void malloc_statics_to_file() {
 }
 
 void *malloc(size_t size) {
-    DEBUG_MALLOC("***********************malloc***************************************\n", "");
-    if(real_malloc==NULL) {      
+    DEBUG_MALLOC("malloc\n", "");
+    pthread_mutex_lock(&malloc_lock);
+    if(real_malloc==NULL) {        
         malloc_init();
         init_flush_func();
         atexit(malloc_statics_to_file); 
@@ -396,24 +405,24 @@ void *malloc(size_t size) {
     }
 
     if (file_is_opened) {
+        pthread_mutex_unlock(&malloc_lock);
         return real_malloc(size);
-    }
+    }    
 
     DEBUG_MALLOC("malloc(%d)\n", size);
-
     enum data_size ds = check_data_size(size);
     DEBUG_MALLOC("data_size(%d)\n", ds);
     malloc_statics[ds].count = malloc_statics[ds].count + 1;
-
+    pthread_mutex_unlock(&malloc_lock);
     DEBUG_MALLOC("malloc %s count(%d)\n", data_size_str[ds], malloc_statics[ds].count);
-    
+
     void *p = NULL;
-    
     struct timeval t1, t2;
     double elapsedTime;
 
     // start timer
     gettimeofday(&t1, NULL);
+    
     p = real_malloc(size);
     // stop timer
     gettimeofday(&t2, NULL);
@@ -422,6 +431,7 @@ void *malloc(size_t size) {
     elapsedTime += (t2.tv_usec - t1.tv_usec);      
     DEBUG_MALLOC("elapsedTime: %f us.\n", elapsedTime);
 
+    pthread_mutex_lock(&malloc_lock);
     put_to_time_list(elapsedTime, &(malloc_statics[ds].latency_list));
     //DEBUG_MALLOC("latency: \n", "");print_time_list( &(malloc_statics[ds].latency_list));
 
@@ -439,12 +449,14 @@ void *malloc(size_t size) {
     //DEBUG_MALLOC("interval: \n", "");print_time_list( &(malloc_statics[ds].interval_list));
     //DEBUG_MALLOC("p: %d\n", p);
     malloc_times++;
+    pthread_mutex_unlock(&malloc_lock);
     DEBUG_MALLOC("malloc_times: %d\n", malloc_times);
     if (malloc_times >= triger) {
         DEBUG_FILE("triger to write file\n", "");
         malloc_statics_to_file();                    
         malloc_times = 0;
     }
+    
     return p;
 }
 
@@ -484,6 +496,7 @@ void memset_statics_to_file() {
 
 void *memset(void *str, int c, size_t size) {
     DEBUG_MEMSET("memset","");
+    pthread_mutex_lock(&memset_lock);
     if (real_memset == NULL) {
         memset_init();
         for (int i = _1_64_; i < GR_4M; i++) {
@@ -499,6 +512,7 @@ void *memset(void *str, int c, size_t size) {
     }
 
     if (file_is_opened) {
+        pthread_mutex_unlock(&memset_lock);
         return real_malloc(size);
     }
 
@@ -507,6 +521,7 @@ void *memset(void *str, int c, size_t size) {
     enum data_size ds = check_data_size(size);
     DEBUG_MEMSET("data_size(%d)\n", ds);
     memset_statics[ds].count = memset_statics[ds].count + 1;
+    pthread_mutex_unlock(&memset_lock);
 
     DEBUG_MEMSET("memset %s count(%d)\n", data_size_str[ds], memset_statics[ds].count);
     
@@ -523,6 +538,7 @@ void *memset(void *str, int c, size_t size) {
     elapsedTime += (t2.tv_usec - t1.tv_usec);      
     DEBUG_MEMSET("elapsedTime: %f us.\n", elapsedTime);
 
+    pthread_mutex_lock(&memset_lock);
     put_to_time_list(elapsedTime, &(memset_statics[ds].latency_list));
 
     if (memset_statics[ds].count == 1) { // it is called at the first time, no interval is record
@@ -538,12 +554,14 @@ void *memset(void *str, int c, size_t size) {
     }
 
     memset_times++;
+    pthread_mutex_unlock(&memset_lock);
     DEBUG_MEMSET("memset_times: %d\n", memset_times);
     if (memset_times >= triger) {
         DEBUG_FILE("triger to write file\n", "");
         memset_statics_to_file();                    
         memset_times = 0;
     }
+    
     return p;    
 }
 
@@ -576,6 +594,7 @@ void memmove_statics_to_file() {
 
 void *memmove(void *str1, const void *str2, size_t size) {
     DEBUG_MEMMOVE("memmove","");
+    pthread_mutex_lock(&memmove_lock);
     if (real_memmove == NULL) {
         memmove_init();
         for (int i = _1_64_; i < GR_4M; i++) {
@@ -591,6 +610,7 @@ void *memmove(void *str1, const void *str2, size_t size) {
     }
 
     if (file_is_opened) {
+        pthread_mutex_unlock(&memmove_lock);
         return real_malloc(size);
     }
 
@@ -599,6 +619,7 @@ void *memmove(void *str1, const void *str2, size_t size) {
     enum data_size ds = check_data_size(size);
     DEBUG_MEMMOVE("data_size(%d)\n", ds);
     memmove_statics[ds].count = memmove_statics[ds].count + 1;
+    pthread_mutex_unlock(&memmove_lock);
 
     DEBUG_MEMMOVE("memmove %s count(%d)\n", data_size_str[ds], memmove_statics[ds].count);
     
@@ -615,6 +636,7 @@ void *memmove(void *str1, const void *str2, size_t size) {
     elapsedTime += (t2.tv_usec - t1.tv_usec);      
     DEBUG_MEMMOVE("elapsedTime: %f us.\n", elapsedTime);
 
+    pthread_mutex_lock(&memmove_lock);
     put_to_time_list(elapsedTime, &(memmove_statics[ds].latency_list));
 
     if (memmove_statics[ds].count == 1) { // it is called at the first time, no interval is record
@@ -630,11 +652,13 @@ void *memmove(void *str1, const void *str2, size_t size) {
     }
 
     memmove_times++;
+    pthread_mutex_unlock(&memmove_lock);
     DEBUG_MEMMOVE("memmove_times: %d\n", memmove_times);
     if (memmove_times >= triger) {
         DEBUG_FILE("triger to write file\n", "");
         memmove_statics_to_file();                    
         memmove_times = 0;
     }
+    
     return p;    
 }

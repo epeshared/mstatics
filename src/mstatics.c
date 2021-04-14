@@ -47,7 +47,7 @@ static const char *log_model_strings[] = {
         __LINE__, __func__, __VA_ARGS__); } while (0)      
 #endif 
 
-#define LOG_FILE 0
+#define LOG_FILE 1
 #ifdef LOG_FILE
 #define DEBUG_FILE(fmt, ...) \
     do { if (LOG_FILE) fprintf(stderr, "[FILE] %s:%d:%s(): " fmt, __FILE__, \
@@ -163,6 +163,7 @@ static int flush_init = 0;
 
 //static const char* FLUSH_INTERVAL = "FLUSH_INTERVAL";
 static const char* MSTATICS_OUT_DIR = "MSTATICS_OUT_DIR";
+static const char* COUNT_TO_LOG = "COUNT_TO_LOG";
 
 static char *malloc_latency_file_name = "malloc_latency.data";
 static FILE *malloc_latency_file = NULL; 
@@ -193,6 +194,12 @@ void init_flush_func() {
         }        
 
         gettimeofday(&last_flush_time, NULL);
+
+        char* COUNT_TO_LOG_STR = getenv(COUNT_TO_LOG);
+        if (COUNT_TO_LOG_STR != NULL) {
+            triger = atoi(COUNT_TO_LOG_STR);
+            DEBUG_FILE("COUNT_TO_LOG is change to %d\n", triger);
+        }
 
         char* tmp_out_dir = getenv (MSTATICS_OUT_DIR);
         if (tmp_out_dir != NULL) {
@@ -232,7 +239,7 @@ void init_flush_func() {
         tmp_out_dir = memset_interval_file_name;
         memset_interval_file_name = (char*) real_malloc(strlen(out_dir) + strlen(tmp_out_dir));
         sprintf(memset_interval_file_name, "%s%s", out_dir, tmp_out_dir);        
-        DEBUG_FILE("memset_latency_file_name: %s\n", memset_interval_file_name);        
+        DEBUG_FILE("memset_intervalfile_name: %s\n", memset_interval_file_name);        
 
     //     memset_latency_file = fopen(memset_latency_file_name,"w");
     //     if (memset_latency_file== NULL) {
@@ -244,7 +251,17 @@ void init_flush_func() {
     //     if (memset_interval_file== NULL) {
     //         DEBUG_FILE("Error opening memset_interval_file file!\n", "");
     //         exit(1);
-    //     }        
+    //     }       
+
+        tmp_out_dir = memmove_latency_file_name;
+        memmove_latency_file_name = (char*) real_malloc(strlen(out_dir) + strlen(tmp_out_dir));
+        sprintf(memmove_latency_file_name, "%s%s", out_dir, tmp_out_dir);
+        DEBUG_FILE("memmove_latency_file_name: %s\n", memmove_latency_file_name);     
+
+        tmp_out_dir = memmove_interval_file_name;
+        memmove_interval_file_name = (char*) real_malloc(strlen(out_dir) + strlen(tmp_out_dir));
+        sprintf(memmove_interval_file_name, "%s%s", out_dir, tmp_out_dir);        
+        DEBUG_FILE("memmove_interval_file_name: %s\n", memmove_interval_file_name);         
     }    
 }
 

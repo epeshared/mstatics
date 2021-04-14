@@ -14,6 +14,8 @@
 /********************** log file triger ******************/
 
 static uint64_t malloc_times = 0;
+static uint64_t memset_times = 0;
+static uint64_t memmove_times = 0;
 static uint64_t triger = 10;
 static int file_is_opened = 0;
 
@@ -95,7 +97,7 @@ typedef struct  {
 
 } memory_statics;
 
-typedef memory_statics malloc_statics_type;
+typedef memory_statics statics_type;
 
 /********************** util function ***************/
 
@@ -143,7 +145,7 @@ enum data_size check_data_size(size_t size) {
 
 /********************** malloc **********************/
 
-static malloc_statics_type malloc_statics[GR_4M + 1];
+static statics_type malloc_statics[GR_4M + 1];
 
 static void* (*real_malloc)(size_t)=NULL;
 
@@ -154,16 +156,33 @@ static int flush_init = 0;
 
 //static const char* FLUSH_INTERVAL = "FLUSH_INTERVAL";
 static const char* MSTATICS_OUT_DIR = "MSTATICS_OUT_DIR";
+
 static char *malloc_latency_file_name = "malloc_latency.data";
 static FILE *malloc_latency_file = NULL; 
 static char *malloc_interval_file_name = "malloc_interval.data";
 static FILE *malloc_interval_file = NULL;
 
+static char *memset_latency_file_name = "memset_latency.data";
+static FILE *memset_latency_file = NULL; 
+static char *memset_interval_file_name = "memset_interval.data";
+static FILE *memset_interval_file = NULL;
+
+static char *memmove_latency_file_name = "memmove_latency.data";
+static FILE *memmove_latency_file = NULL; 
+static char *memmove_interval_file_name = "memmove_interval.data";
+static FILE *memmove_interval_file = NULL;
+
 char* out_dir = "./";
+
+static void malloc_init(void);
 
 void init_flush_func() {    
     if (!flush_init) {
         flush_init = 1;
+
+        if(real_malloc==NULL) {      
+            malloc_init();
+        }        
 
         gettimeofday(&last_flush_time, NULL);
 
@@ -173,6 +192,7 @@ void init_flush_func() {
             strcpy(out_dir, tmp_out_dir);
         }
         
+        /******/
         tmp_out_dir = malloc_latency_file_name;
         malloc_latency_file_name = (char*) real_malloc(strlen(out_dir) + strlen(tmp_out_dir));
         sprintf(malloc_latency_file_name, "%s%s", out_dir, tmp_out_dir);
@@ -194,6 +214,29 @@ void init_flush_func() {
             DEBUG_FILE("Error opening malloc_interval_file file!\n", "");
             exit(1);
         }
+
+        /******/
+        tmp_out_dir = memset_latency_file_name;
+        memset_latency_file_name = (char*) real_malloc(strlen(out_dir) + strlen(tmp_out_dir));
+        sprintf(memset_latency_file_name, "%s%s", out_dir, tmp_out_dir);
+        DEBUG_FILE("memset_latency_file_name: %s\n", memset_latency_file_name);     
+
+        tmp_out_dir = memset_interval_file_name;
+        memset_interval_file_name = (char*) real_malloc(strlen(out_dir) + strlen(tmp_out_dir));
+        sprintf(memset_interval_file_name, "%s%s", out_dir, tmp_out_dir);        
+        DEBUG_FILE("memset_latency_file_name: %s\n", memset_interval_file_name);        
+
+        memset_latency_file = fopen(memset_latency_file_name,"w");
+        if (memset_latency_file== NULL) {
+            DEBUG_FILE("Error opening memset_latency_file file!\n" ,"");
+            exit(1);
+        }
+
+        memset_interval_file = fopen(memset_interval_file_name,"w");
+        if (memset_interval_file== NULL) {
+            DEBUG_FILE("Error opening memset_interval_file file!\n", "");
+            exit(1);
+        }        
     }    
 }
 
@@ -203,19 +246,7 @@ static void malloc_init(void) {
     real_malloc = dlsym(RTLD_NEXT, "malloc");
     if (NULL == real_malloc) {
         fprintf(stderr, "Error in `dlsym`: %s\n", dlerror());
-    }
-
-    for (int i = _1_64_; i < GR_4M; i++) {
-        malloc_statics[i].count = 0;
-        malloc_statics[i].latency_list.size = 0;
-        malloc_statics[i].latency_list.head = NULL;
-        malloc_statics[i].latency_list.tail = NULL;
-        malloc_statics[i].interval_list.size = 0;
-        malloc_statics[i].interval_list.head = NULL;
-        malloc_statics[i].interval_list.tail = NULL;
-    }
-
-    init_flush_func();
+    }    
 }
 
 static void put_to_time_list(uint64_t time, time_list* list) {
@@ -283,69 +314,52 @@ static char* time_list_to_string(time_list* list) {
     return list_string;
 }
 
-void sig_term_handler(int signum, siginfo_t *info, void *ptr) {
-    fprintf(stderr, "sig_term_handler%d\n", signum);
-    DEBUG_FILE("Caught signum %d\n", signum);
-    exit(signum);
-}
+void statics_to_file(FILE* latency_file, char* latency_file_name, 
+    FILE* interval_file, char* interval_file_name, statics_type* statics) {
 
-void catch_sigterm() {
-    static struct sigaction _sigact;
+    if(real_malloc==NULL) {      
+        malloc_init();
+    }  
 
-    memset(&_sigact, 0, sizeof(_sigact));
-    _sigact.sa_sigaction = sig_term_handler;
-    _sigact.sa_flags = SA_SIGINFO;
-
-    sigaction(SIGTERM, &_sigact, NULL);
-}
-
-void handle_sigint(int sig) {
-    fprintf(stderr, "Caught singal %d\n", sig);
-    DEBUG_FILE("Caught singal %d\n", sig);
-    exit(sig);
-}
-
-void malloc_statics_to_file() {
-    DEBUG_MALLOC("************************** to file **************************\n", "");
-    char* malloc_statics_string = NULL;
-    size_t malloc_statics_string_len = 0;
+    DEBUG_FILE("write to file:%s\n", latency_file_name);
+    DEBUG_FILE("write to file:%s\n", interval_file_name);
     file_is_opened = 1;
-    malloc_latency_file = fopen(malloc_latency_file_name,"w");
-    malloc_interval_file = fopen(malloc_interval_file_name,"w");    
+    latency_file = fopen(latency_file_name,"w");
+    interval_file = fopen(interval_file_name,"w");    
     for (int i = 0;i <= GR_4M; i++) {
         char* latency_statics_string = NULL;
         char* interval_statics_string = NULL;
 
-        malloc_statics_type static_item = malloc_statics[i];        
+        statics_type static_item = statics[i];        
 
-        char* malloc_size_str = data_size_str[i];
-        size_t malloc_size_str_len = strlen(malloc_size_str) + 1; // plush one bit for space char
-        DEBUG_MALLOC("---->malloc_size_str:%s\n", malloc_size_str);
+        char* size_str = data_size_str[i];
+        size_t size_str_len = strlen(size_str) + 1; // plush one bit for space char
+        DEBUG_FILE("---->size_str:%s\n", size_str);
                 
         if (static_item.count != 0) {
             char count_str[21];
             sprintf(count_str, "%d", static_item.count);
-            size_t count_str_len = strlen(count_str) + 1; // plush one bit for space char
-            DEBUG_MALLOC("count_str:%s", count_str);
+            size_t count_str_len = strlen(count_str) + 1; // plus one bit for space char
+            DEBUG_FILE("count_str:%s\n", count_str);
 
-            char* latency_str = time_list_to_string(&(malloc_statics[i].latency_list));
-            size_t latency_str_len = strlen(latency_str) + 1; // plush one bit for /n char
-            DEBUG_MALLOC("latency_str:%s\n", latency_str);
-            latency_statics_string = (char *)real_malloc(malloc_size_str_len + count_str_len + latency_str_len + 1);
-            sprintf(latency_statics_string, "%s %s %s\n", malloc_size_str, count_str, latency_str);
-            fprintf(malloc_latency_file, "%s", latency_statics_string);            
+            char* latency_str = time_list_to_string(&(statics[i].latency_list));
+            DEBUG_FILE("latency_str:%s\n", latency_str);
+            size_t latency_str_len = strlen(latency_str) + 1; // plush one bit for /n char            
+            latency_statics_string = (char *)real_malloc(size_str_len + count_str_len + latency_str_len + 1);
+            sprintf(latency_statics_string, "%s %s %s\n", size_str, count_str, latency_str);
+            fprintf(latency_file, "%s", latency_statics_string);            
             free(latency_str);
             free(latency_statics_string);
             latency_statics_string = NULL;
             latency_str = NULL;
 
-            char* interval_str = time_list_to_string(&(malloc_statics[i].interval_list));
+            char* interval_str = time_list_to_string(&(statics[i].interval_list));
             if (interval_str != NULL) {
                 size_t interval_str_len = strlen(interval_str) + 3; // plush one bit for /n char
-                DEBUG_MALLOC("interval_str:%s\n", interval_str);
-                interval_statics_string = (char*)real_malloc(malloc_size_str_len + count_str_len + interval_str_len + 1);
+                DEBUG_FILE("interval_str:%s\n", interval_str);
+                interval_statics_string = (char*)real_malloc(size_str_len + count_str_len + interval_str_len + 1);
                 sprintf(interval_statics_string, "%s %s %s\n", data_size_str[i], count_str, interval_str);
-                fprintf(malloc_interval_file, "%s", interval_statics_string);
+                fprintf(interval_file, "%s", interval_statics_string);
                 free(interval_str);                
                 free(interval_statics_string);
                 interval_str = NULL;
@@ -354,25 +368,31 @@ void malloc_statics_to_file() {
         }        
     }
     
-    fclose(malloc_latency_file);
-    fclose(malloc_interval_file);
+    fclose(latency_file);
+    fclose(interval_file);
     file_is_opened = 0;
+}
+
+void malloc_statics_to_file() {
+    statics_to_file(malloc_latency_file, malloc_latency_file_name, 
+        malloc_interval_file, malloc_interval_file_name, malloc_statics);
 }
 
 void *malloc(size_t size) {
     DEBUG_MALLOC("***********************malloc***************************************\n", "");
     if(real_malloc==NULL) {      
         malloc_init();
-        DEBUG_FILE("init exit function\n", "");
+        init_flush_func();
         atexit(malloc_statics_to_file); 
-        // signal(SIGTERM, handle_sigint);
-        // signal(SIGILL, handle_sigint);
-        // signal(SIGINT, handle_sigint);
-        // signal(SIGABRT, handle_sigint);
-        // signal(SIGQUIT, handle_sigint);
-        // signal(SIGKILL, handle_sigint);
-        // signal(SIGSTOP, handle_sigint);
-        // catch_sigterm();       
+        for (int i = _1_64_; i < GR_4M; i++) {
+            malloc_statics[i].count = 0;
+            malloc_statics[i].latency_list.size = 0;
+            malloc_statics[i].latency_list.head = NULL;
+            malloc_statics[i].latency_list.tail = NULL;
+            malloc_statics[i].interval_list.size = 0;
+            malloc_statics[i].interval_list.head = NULL;
+            malloc_statics[i].interval_list.tail = NULL;
+        }
     }
 
     if (file_is_opened) {
@@ -434,3 +454,187 @@ void *malloc_internal(size_t size, char const * caller_name ) {
 }
 
 #define malloc(size) malloc_internal(size, __function__)
+
+/*************************** memset ******************************************/
+
+#define LOG_MEMSET 0
+#ifdef LOG_MEMSET
+#define DEBUG_MEMSET(fmt, ...) \
+    do { if (LOG_MEMSET) fprintf(stderr, "[MEMSET] %s:%d:%s(): " fmt, __FILE__, \
+        __LINE__, __func__, __VA_ARGS__); } while (0)      
+#endif 
+
+typedef memory_statics memset_statics_type;
+static memset_statics_type memset_statics[GR_4M + 1];
+
+static void *(*real_memset)(void *, int, size_t)=NULL;
+
+static void memset_init(void) {
+    DEBUG_MEMSET("MEMSET init\n", "");
+    real_memset = dlsym(RTLD_NEXT, "memset");
+    if (NULL == real_memset) {
+        fprintf(stderr, "Error in `dlsym`: %s\n", dlerror());
+    }
+}
+
+void memset_statics_to_file() {
+    statics_to_file(memset_latency_file, memset_latency_file_name, 
+        memset_interval_file, memset_interval_file_name, memset_statics);
+}
+
+void *memset(void *str, int c, size_t size) {
+    DEBUG_MEMSET("memset","");
+    if (real_memset == NULL) {
+        memset_init();
+        for (int i = _1_64_; i < GR_4M; i++) {
+            memset_statics[i].count = 0;
+            memset_statics[i].latency_list.size = 0;
+            memset_statics[i].latency_list.head = NULL;
+            memset_statics[i].latency_list.tail = NULL;
+            memset_statics[i].interval_list.size = 0;
+            memset_statics[i].interval_list.head = NULL;
+            memset_statics[i].interval_list.tail = NULL;
+        }
+        init_flush_func();        
+    }
+
+    if (file_is_opened) {
+        return real_malloc(size);
+    }
+
+    DEBUG_MEMSET("memset(%d)\n", size);
+
+    enum data_size ds = check_data_size(size);
+    DEBUG_MEMSET("data_size(%d)\n", ds);
+    memset_statics[ds].count = memset_statics[ds].count + 1;
+
+    DEBUG_MEMSET("memset %s count(%d)\n", data_size_str[ds], memset_statics[ds].count);
+    
+    struct timeval t1, t2;
+    double elapsedTime;
+
+    // start timer
+    gettimeofday(&t1, NULL);
+    void* p = real_memset(str, c, size);
+    // stop timer
+    gettimeofday(&t2, NULL);
+
+    elapsedTime = (t2.tv_sec - t1.tv_sec);
+    elapsedTime += (t2.tv_usec - t1.tv_usec);      
+    DEBUG_MEMSET("elapsedTime: %f us.\n", elapsedTime);
+
+    put_to_time_list(elapsedTime, &(memset_statics[ds].latency_list));
+
+    if (memset_statics[ds].count == 1) { // it is called at the first time, no interval is record
+        memset_statics[ds].last_called_time = t2;
+    } else {// it is not called at the first time, caculate the interval from last called time
+        uint64_t interval = (t1.tv_sec - memset_statics[ds].last_called_time.tv_sec);
+        interval += (t1.tv_usec -  memset_statics[ds].last_called_time.tv_usec);
+        if (interval > 60 * 1000 * 1000) {
+            interval = 60 * 1000 * 1000;
+        }
+        put_to_time_list(interval, &(memset_statics[ds].interval_list));    
+        memset_statics[ds].last_called_time = t1;  
+    }
+
+    memset_times++;
+    DEBUG_MEMSET("memset_times: %d\n", memset_times);
+    if (memset_times >= triger) {
+        DEBUG_FILE("triger to write file\n", "");
+        memset_statics_to_file();                    
+        memset_times = 0;
+    }
+    return p;    
+}
+
+/*************************** memmove ******************************************/
+
+#define LOG_MEMMOVE 0
+#ifdef LOG_MEMMOVE
+#define DEBUG_MEMMOVE(fmt, ...) \
+    do { if (LOG_MEMMOVE) fprintf(stderr, "[MEMMOVE] %s:%d:%s(): " fmt, __FILE__, \
+        __LINE__, __func__, __VA_ARGS__); } while (0)      
+#endif 
+
+typedef memory_statics memmove_statics_type;
+static memmove_statics_type memmove_statics[GR_4M + 1];
+
+static void *(*real_memmove)(void *, const void *, size_t)=NULL;
+
+static void memmove_init(void) {
+    DEBUG_MEMMOVE("MEMSET init\n", "");
+    real_memmove = dlsym(RTLD_NEXT, "memmove");
+    if (NULL == real_memmove) {
+        fprintf(stderr, "Error in `dlsym`: %s\n", dlerror());
+    }
+}
+
+void memmove_statics_to_file() {
+    statics_to_file(memmove_latency_file, memmove_latency_file_name, 
+        memmove_interval_file, memmove_interval_file_name, memmove_statics);
+}
+
+void *memmove(void *str1, const void *str2, size_t size) {
+    DEBUG_MEMMOVE("memmove","");
+    if (real_memmove == NULL) {
+        memmove_init();
+        for (int i = _1_64_; i < GR_4M; i++) {
+            memmove_statics[i].count = 0;
+            memmove_statics[i].latency_list.size = 0;
+            memmove_statics[i].latency_list.head = NULL;
+            memmove_statics[i].latency_list.tail = NULL;
+            memmove_statics[i].interval_list.size = 0;
+            memmove_statics[i].interval_list.head = NULL;
+            memmove_statics[i].interval_list.tail = NULL;
+        }
+        init_flush_func();        
+    }
+
+    if (file_is_opened) {
+        return real_malloc(size);
+    }
+
+    DEBUG_MEMMOVE("memmove(%d)\n", size);
+
+    enum data_size ds = check_data_size(size);
+    DEBUG_MEMMOVE("data_size(%d)\n", ds);
+    memmove_statics[ds].count = memmove_statics[ds].count + 1;
+
+    DEBUG_MEMMOVE("memmove %s count(%d)\n", data_size_str[ds], memmove_statics[ds].count);
+    
+    struct timeval t1, t2;
+    double elapsedTime;
+
+    // start timer
+    gettimeofday(&t1, NULL);
+    void* p = real_memmove(str1, str2, size);
+    // stop timer
+    gettimeofday(&t2, NULL);
+
+    elapsedTime = (t2.tv_sec - t1.tv_sec);
+    elapsedTime += (t2.tv_usec - t1.tv_usec);      
+    DEBUG_MEMMOVE("elapsedTime: %f us.\n", elapsedTime);
+
+    put_to_time_list(elapsedTime, &(memmove_statics[ds].latency_list));
+
+    if (memmove_statics[ds].count == 1) { // it is called at the first time, no interval is record
+        memmove_statics[ds].last_called_time = t2;
+    } else {// it is not called at the first time, caculate the interval from last called time
+        uint64_t interval = (t1.tv_sec - memmove_statics[ds].last_called_time.tv_sec);
+        interval += (t1.tv_usec -  memmove_statics[ds].last_called_time.tv_usec);
+        if (interval > 60 * 1000 * 1000) {
+            interval = 60 * 1000 * 1000;
+        }
+        put_to_time_list(interval, &(memmove_statics[ds].interval_list));    
+        memmove_statics[ds].last_called_time = t1;  
+    }
+
+    memmove_times++;
+    DEBUG_MEMMOVE("memmove_times: %d\n", memmove_times);
+    if (memmove_times >= triger) {
+        DEBUG_FILE("triger to write file\n", "");
+        memmove_statics_to_file();                    
+        memmove_times = 0;
+    }
+    return p;    
+}

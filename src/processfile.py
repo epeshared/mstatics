@@ -1,7 +1,13 @@
+#!/usr/bin/python3
+
 import pandas as pd
 import xlsxwriter
+import os.path
+from os import path
 
-def process_latency(pdwriter, fine_path, chart_sheet, data_sheet_name, title):
+def process_latency(pdwriter, fine_path, chart_sheet, index, data_sheet_name, title):
+    if not path.isfile(fine_path):
+        return
     with open(fine_path, 'r') as temp_f:
         # get No of columns in each line
         col_count = [ len(l.split(" ")) for l in temp_f.readlines() ]
@@ -27,34 +33,46 @@ def process_latency(pdwriter, fine_path, chart_sheet, data_sheet_name, title):
     df = df.round({"avg.":0})
     df.to_excel(pdwriter, sheet_name = data_sheet_name)
 
-    # workbook  = pdwriter.book
+    workbook  = pdwriter.book
     # worksheet = workbook.add_worksheet("Sheet2")
     # worksheet = pdwriter.sheets["Sheet2"]
 
     chart1 = workbook.add_chart({'type': 'column'})
+    # chart1.add_series({
+    #     'name':       '= count',
+    #     'categories': '= '+data_sheet_name+'!$B$2:$B$7',
+    #     'values':     '= '+data_sheet_name+'!$C$2:$C$7',
+    #     'data_labels': {'value': True},
+    # })
     chart1.add_series({
         'name':       '= count',
-        'categories': '= '+data_sheet_name+'!$B$2:$B$7',
-        'values':     '= '+data_sheet_name+'!$C$2:$C$7',
+        'categories': [data_sheet_name, 1,1,rowlen+1,1],
+        'values':     [data_sheet_name, 1,2,rowlen+1,2],
         'data_labels': {'value': True},
-    })
+    })    
     chart1.set_title({'name': title + " count"})
-    chart_sheet.insert_chart("A2", chart1)
+    chart_sheet.insert_chart((index - 1) * 20 + 1, 1, chart1)
 
     chart2 = workbook.add_chart({'type': 'column'})
+    # chart2.add_series({
+    #     'name':       '= avg. latency',
+    #     'categories': '= '+data_sheet_name+'!$B$2:$B$7',
+    #     'values':     '= '+data_sheet_name+'!$D$2:$D$7',
+    #     'data_labels': {'value': True},
+    # })
     chart2.add_series({
         'name':       '= avg. latency',
-        'categories': '= '+data_sheet_name+'!$B$2:$B$7',
-        'values':     '= '+data_sheet_name+'!$D$2:$D$7',
+        'categories': [data_sheet_name, 1,1,rowlen+1,1],
+        'values':     [data_sheet_name, 1,3,rowlen+1,3],
         'data_labels': {'value': True},
-    })
+    })    
     chart2.set_title({'name': title+" latency (us)"})
-    chart_sheet.insert_chart("K2", chart2)
+    chart_sheet.insert_chart((index - 1) * 20 + 1, 11, chart2)
 
     data_sheet = workbook.get_worksheet_by_name(data_sheet_name)
 
-    for index, row in df.iterrows():
-        line = index + 1
+    for row_index, row in df.iterrows():
+        line = row_index + 1
         # print((row.values.tolist()))
         # print("line:"+str(line))
         linechart=workbook.add_chart({'type': 'line'})
@@ -63,14 +81,16 @@ def process_latency(pdwriter, fine_path, chart_sheet, data_sheet_name, title):
             'categories': [data_sheet_name, line, 0, line, 0],
             'values':     [data_sheet_name, line, 4, line, collen],
         })
-        chart_row = (rowlen + 2) + (index//3)*15
-        char_col = 10*( index % 3)
+        chart_row = (rowlen + 2) + (row_index//3)*15
+        char_col = 10*( row_index % 3)
         # print("insert row:" + str(chart_row))
         # print("insert col:" + str(char_col))
         data_sheet.insert_chart(chart_row, char_col, linechart)    
     return df    
 
-def process_interval(pdwriter, fine_path, chart_sheet, data_sheet_name, title):
+def process_interval(pdwriter, fine_path, chart_sheet, index, data_sheet_name, title):
+    if not path.isfile(fine_path):
+        return    
     with open(fine_path, 'r') as temp_f:
         # get No of columns in each line
         col_count = [ len(l.split(" ")) for l in temp_f.readlines() ]
@@ -91,20 +111,27 @@ def process_interval(pdwriter, fine_path, chart_sheet, data_sheet_name, title):
     df = df.round({"avg.":0})
     df.to_excel(pdwriter, sheet_name = data_sheet_name)    
 
+    workbook  = pdwriter.book
     chart1=workbook.add_chart({'type': 'column'})
+    # chart1.add_series({
+    #     'name':       '= avg. interval',
+    #     'categories': '= '+data_sheet_name+'!$B$2:$B$7',
+    #     'values':     '= '+data_sheet_name+'!$D$2:$D$7',
+    #     'data_labels': {'value': True},
+    # })
     chart1.add_series({
         'name':       '= avg. interval',
-        'categories': '= '+data_sheet_name+'!$B$2:$B$7',
-        'values':     '= '+data_sheet_name+'!$D$2:$D$7',
+        'categories': [data_sheet_name, 1,1,rowlen+1,1],
+        'values':     [data_sheet_name, 1,3,rowlen+1,3],
         'data_labels': {'value': True},
-    })
+    })        
     chart1.set_title({'name': title+" interval (us)"})
-    chart_sheet.insert_chart("U2", chart1)
+    chart_sheet.insert_chart((index - 1) * 20 + 1, 21, chart1)
 
     data_sheet = workbook.get_worksheet_by_name(data_sheet_name)
 
-    for index, row in df.iterrows():
-        line = index + 1
+    for row_index, row in df.iterrows():
+        line = row_index + 1
         # print((row.values.tolist()))
         # print("line:"+str(line))
         linechart=workbook.add_chart({'type': 'line'})
@@ -113,17 +140,23 @@ def process_interval(pdwriter, fine_path, chart_sheet, data_sheet_name, title):
             'categories': [data_sheet_name, line, 0, line, 0],
             'values':     [data_sheet_name, line, 4, line, collen],
         })
-        chart_row = (rowlen + 2) + (index//3)*15
-        char_col = 10*( index % 3)
+        chart_row = (rowlen + 2) + (row_index//3)*15
+        char_col = 10*( row_index % 3)
         # print("insert row:" + str(chart_row))
         # print("insert col:" + str(char_col))
         data_sheet.insert_chart(chart_row, char_col, linechart)
 
 
-
-pdwriter = pd.ExcelWriter('/home/xtang/mstatics/test/report.xlsx', engine='xlsxwriter') # pylint: disable=abstract-class-instantiated
+input_dir=input("Enter the data directory: ")
+report_file=input_dir + "/report.xlsx"
+print("The report file will be located at: " + report_file)
+pdwriter = pd.ExcelWriter(report_file, engine='xlsxwriter') # pylint: disable=abstract-class-instantiated
 workbook  = pdwriter.book
 chart_sheet = workbook.add_worksheet("Sheet1")
-process_latency(pdwriter, "/home/xtang/mstatics/test/memset_latency.data", chart_sheet, "memset_latency", "memset")
-process_interval(pdwriter, "/home/xtang/mstatics/test/memset_interval.data", chart_sheet, "memset_interval", "memset")
+process_latency(pdwriter, input_dir+"/malloc_latency.data", chart_sheet, 1, "malloc_latency", "malloc")
+process_interval(pdwriter, input_dir+"/malloc_interval.data", chart_sheet, 1, "malloc_interval", "malloc")
+process_latency(pdwriter, input_dir+"/memset_latency.data", chart_sheet, 2, "memset_latency", "memset")
+process_interval(pdwriter, input_dir+"/memset_interval.data", chart_sheet, 2, "memset_interval", "memset")
+process_latency(pdwriter, input_dir+"/memmov_latency.data", chart_sheet, 3, "memmov_latency", "memmov")
+process_interval(pdwriter, input_dir+"/memmov_interval.data", chart_sheet, 3, "memmov_interval", "memmov")
 pdwriter.save()

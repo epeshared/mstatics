@@ -2,16 +2,19 @@
 
 import pandas as pd
 import xlsxwriter
+import csv
 import os.path
 from os import path
 
 def process_latency(pdwriter, fine_path, chart_sheet, index, data_sheet_name, title):
+    print("process file:" + fine_path)
     if not path.isfile(fine_path):
         return
+
     with open(fine_path, 'r') as temp_f:
         # get No of columns in each line
-        col_count = [ len(l.split(" ")) for l in temp_f.readlines() ]
-    # print(col_count)
+        col_count = [ len(l.split(" ")) for l in temp_f.readlines() ] 
+
     ### Generate column names  (names will be 0, 1, 2, ..., maximum columns - 1)
     column_names = [i-2 for i in range(0, max(col_count))]
     column_names[0] = "data_size"
@@ -19,7 +22,8 @@ def process_latency(pdwriter, fine_path, chart_sheet, index, data_sheet_name, ti
     #print(column_names)
 
     #df = pd.read_csv(fine_path, usecols=[0,1], header=None, delim_whitespace=True, keep_default_na=True)
-    df = pd.read_csv(fine_path, names=column_names, header=None, delim_whitespace=True, keep_default_na=True)
+    df = pd.read_csv(fine_path, names=column_names, header=None, 
+        delim_whitespace=True, keep_default_na=True, lineterminator='\n')
     #df.columns = ["data_size", "count"]
     # rowlen = df.shape[0]
     # print(df)
@@ -89,6 +93,7 @@ def process_latency(pdwriter, fine_path, chart_sheet, index, data_sheet_name, ti
     return df    
 
 def process_interval(pdwriter, fine_path, chart_sheet, index, data_sheet_name, title):
+    print("process file:" + fine_path)
     if not path.isfile(fine_path):
         return    
     with open(fine_path, 'r') as temp_f:
@@ -155,8 +160,17 @@ workbook  = pdwriter.book
 chart_sheet = workbook.add_worksheet("Sheet1")
 process_latency(pdwriter, input_dir+"/malloc_latency.data", chart_sheet, 1, "malloc_latency", "malloc")
 process_interval(pdwriter, input_dir+"/malloc_interval.data", chart_sheet, 1, "malloc_interval", "malloc")
+# import csv
+# with open(input_dir+"/memset_latency.data", 'rb') as f:
+#     reader = csv.reader(f)
+#     linenumber = 1
+#     try:
+#         for row in reader:
+#             linenumber += 1
+#     except Exception as e:
+#         print (("Error line %d: %s %s" % (linenumber, str(type(e)), e.__cause__)))
 process_latency(pdwriter, input_dir+"/memset_latency.data", chart_sheet, 2, "memset_latency", "memset")
 process_interval(pdwriter, input_dir+"/memset_interval.data", chart_sheet, 2, "memset_interval", "memset")
-process_latency(pdwriter, input_dir+"/memmov_latency.data", chart_sheet, 3, "memmov_latency", "memmov")
-process_interval(pdwriter, input_dir+"/memmov_interval.data", chart_sheet, 3, "memmov_interval", "memmov")
+process_latency(pdwriter, input_dir+"/memmove_latency.data", chart_sheet, 3, "memmove_latency", "memmov")
+process_interval(pdwriter, input_dir+"/memmove_interval.data", chart_sheet, 3, "memmove_interval", "memmov")
 pdwriter.save()

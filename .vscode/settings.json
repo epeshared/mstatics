@@ -2,6 +2,7 @@
     "files.associations": {
         "mstatics.h": "c",
         "dlfcn.h": "c",
-        "type_traits": "c"
+        "type_traits": "c",
+        "pthread.h": "c"
     }
 }

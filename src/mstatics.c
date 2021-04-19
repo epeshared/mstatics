@@ -10,6 +10,7 @@
 #include <unistd.h>     // for sleep()
 #include <signal.h>
 #include <pthread.h>
+#include <ctype.h>
 #include "mstatics.h"
 
 /********************** lock *****************************/
@@ -345,6 +346,25 @@ static char* time_list_to_string(time_list* list) {
     return list_string;
 }
 
+char *trimwhitespace(char *str) {
+  char *end;
+
+  // Trim leading space
+  while(isspace((unsigned char)*str)) str++;
+
+  if(*str == 0)  // All spaces?
+    return str;
+
+  // Trim trailing space
+  end = str + strlen(str) - 1;
+  while(end > str && isspace((unsigned char)*end)) end--;
+
+  // Write new null terminator character
+  end[1] = '\0';
+
+  return str;
+}
+
 void statics_to_file(FILE* latency_file, char* latency_file_name, 
     FILE* interval_file, char* interval_file_name, statics_type* statics) {
 
@@ -372,9 +392,11 @@ void statics_to_file(FILE* latency_file, char* latency_file_name,
             sprintf(count_str, "%d", static_item.count);
             size_t count_str_len = strlen(count_str) + 1; // plus one bit for space char
             DEBUG_FILE("count_str:%s\n", count_str);
-
+            
             char* latency_str = time_list_to_string(&(statics[i].latency_list));
-            DEBUG_FILE("latency_str:%s\n", latency_str);
+            DEBUG_FILE("orig latency_str:%s\n", latency_str);
+            trimwhitespace(latency_str);
+            DEBUG_FILE("stripped latency_str:%s\n", latency_str);
             size_t latency_str_len = strlen(latency_str) + 1; // plush one bit for /n char            
             latency_statics_string = (char *)real_malloc(size_str_len + count_str_len + latency_str_len + 1);
             sprintf(latency_statics_string, "%s %s %s\n", size_str, count_str, latency_str);
@@ -384,7 +406,10 @@ void statics_to_file(FILE* latency_file, char* latency_file_name,
             latency_statics_string = NULL;
             latency_str = NULL;
 
-            char* interval_str = time_list_to_string(&(statics[i].interval_list));
+            char* interval_str = time_list_to_string(&(statics[i].latency_list));
+            DEBUG_FILE("orig interval_str:%s\n", latency_str);
+            trimwhitespace(interval_str);
+            DEBUG_FILE("stripped interval_str:%s\n", interval_str);
             if (interval_str != NULL) {
                 size_t interval_str_len = strlen(interval_str) + 3; // plush one bit for /n char
                 DEBUG_FILE("interval_str:%s\n", interval_str);

@@ -160,15 +160,6 @@ workbook  = pdwriter.book
 chart_sheet = workbook.add_worksheet("Sheet1")
 process_latency(pdwriter, input_dir+"/malloc_latency.data", chart_sheet, 1, "malloc_latency", "malloc")
 process_interval(pdwriter, input_dir+"/malloc_interval.data", chart_sheet, 1, "malloc_interval", "malloc")
-# import csv
-# with open(input_dir+"/memset_latency.data", 'rb') as f:
-#     reader = csv.reader(f)
-#     linenumber = 1
-#     try:
-#         for row in reader:
-#             linenumber += 1
-#     except Exception as e:
-#         print (("Error line %d: %s %s" % (linenumber, str(type(e)), e.__cause__)))
 process_latency(pdwriter, input_dir+"/memset_latency.data", chart_sheet, 2, "memset_latency", "memset")
 process_interval(pdwriter, input_dir+"/memset_interval.data", chart_sheet, 2, "memset_interval", "memset")
 process_latency(pdwriter, input_dir+"/memmove_latency.data", chart_sheet, 3, "memmove_latency", "memmov")

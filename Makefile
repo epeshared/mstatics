@@ -7,10 +7,10 @@ all: libs mtest
 libs: libmstatics.so
 
 mtest:$(TEST_DIR)/test.c
-	gcc $(TEST_DIR)/test.c -O3 -o $(TEST_DIR)/mtest
+	gcc -lpthread  $(TEST_DIR)/test.c -O3 -o $(TEST_DIR)/mtest
 
 libmstatics.so: $(SRC)/mstatics.c $(SRC)/$(HEADERS)
-	gcc -fPIC -g -ggdb -O0  -shared -Wl,-z,defs,--as-needed  $(SRC)/mstatics.c -ldl -lpthread -o $(LIB)/libmstatics.so 
+	gcc -fPIC -g -ggdb -O0  -shared -Wl,-z,defs,--as-needed -I./  $(SRC)/mstatics.c -ldl -lpthread -o $(LIB)/libmstatics.so 
 
 clean:
 	-rm -f $(LIB)/libmstatics.so

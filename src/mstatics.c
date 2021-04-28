@@ -491,7 +491,7 @@ void statics_to_file(FILE* latency_file, char* latency_file_name,
 
     gettimeofday(&tv, NULL);
     if((tm = localtime(&tv.tv_sec)) != NULL) {
-        strftime(fmt, sizeof fmt, "%Y-%m-%d %H:%M:%S.%%06u", tm);
+        strftime(fmt, sizeof fmt, "%Y-%m-%d-%H:%M:%S.%%06u", tm);
         snprintf(time_buffer, sizeof time_buffer, fmt, tv.tv_usec);
         // printf("'%s'\n", time_buffer); 
     }       
@@ -583,7 +583,7 @@ void statics_to_file(FILE* latency_file, char* latency_file_name,
 
     for (int i = 0;i <= GR_4M; i++) {
         char avg_latency_str[64];
-        sprintf(avg_latency_str, "%d ", avg_latency_list[i]);
+        sprintf(avg_latency_str, "%d", avg_latency_list[i]);
         size_t value_str_len = strlen(avg_latency_str) + 1;
 
         char* last_list_string = latency_list_string;
@@ -599,7 +599,7 @@ void statics_to_file(FILE* latency_file, char* latency_file_name,
         // DEBUG_FILE("latency_list_string: %s\n", latency_list_string);
 
         char count_str[64];
-        sprintf(count_str, "%d ", count_list[i]);
+        sprintf(count_str, "%d", count_list[i]);
         DEBUG_FILE("count_str: %s\n", count_str);
         size_t count_str_len = strlen(count_str) + 1;
         DEBUG_FILE("count_str_len: %d\n", count_str_len);
@@ -617,13 +617,14 @@ void statics_to_file(FILE* latency_file, char* latency_file_name,
     }
 
     char* latency_line =  (char *)real_malloc(strlen(time_buffer) + 1 + latency_list_string_len);
-    trimwhitespace(latency_line);
+    //trimwhitespace(latency_list_string);
     sprintf(latency_line, "%s %s", time_buffer, latency_list_string);
+    //trimwhitespace(latency_line);
     fprintf(latency_file, "%s\n", latency_line);
 
     char* count_line =  (char *)real_malloc(strlen(time_buffer) + 1 + count_list_string_len);    
     sprintf(count_line, "%s %s", time_buffer, count_list_string);
-    trimwhitespace(count_line);
+    //trimwhitespace(count_line);
     fprintf(interval_file, "%s\n", count_line);
 
     free_statics_data(statics);  

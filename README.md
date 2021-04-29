@@ -4,9 +4,7 @@ This tool is used to statistics the C memory function usage. Currently the suppo
 
 The statistics result is generated to an excel file. Also this tool will generate some pictures as below in the report file.
 
-:::image type="content" source="Capture.PNG"
-alt-text="":::
-
+![image info](./Capture.PNG)
 
 
 ## How to Build

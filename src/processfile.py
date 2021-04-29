@@ -44,23 +44,25 @@ def get_avg_latency_df(latency_df, count_df, memory_func):
 
 
 def process_file(pdwriter, file_path, chart_sheet):
-    supported_funcs = ["malloc", "memset", "memmove"]
+    supported_funcs = ["malloc", "memset", "memmove", "memcpy"]
 
     sum_count_df = pd.DataFrame()
 
     avg_latency_df = pd.DataFrame()
     avg_latency_df.to_excel(pdwriter, sheet_name="summary")
+    df_row_len = 0
     for func in supported_funcs:
         # print("func:" + func)
         interval_file = file_path + "/" + func +"_interval.data"
         latency_file = file_path + "/" + func +"_latency.data"
 
         count_df = pd.read_csv(interval_file, sep=' ')
-        count_df.to_excel(pdwriter, sheet_name=func+"_count")
+        count_df.to_excel(pdwriter, sheet_name=func+"_count")        
         sum_count_df = pd.concat([sum_count_df, get_count_sum_df(count_df, func)], axis = 1)
 
         lantecy_df = pd.read_csv(latency_file, sep=' ')
         lantecy_df.to_excel(pdwriter, sheet_name=func+"_latency")
+        df_row_len = lantecy_df.shape[0]
         avg_latency_df = pd.concat([avg_latency_df, get_avg_latency_df(lantecy_df, count_df, func)], axis = 1)
 
     workbook = pdwriter.book
@@ -99,7 +101,7 @@ def process_file(pdwriter, file_path, chart_sheet):
             'name':       '= count (%)',
             'categories': ["summary", sum_count_df_startrow+1,0, sum_count_df_startrow +1 + sum_count_df_rowlen,0],
             'values':     ["summary", sum_count_df_startrow+1,value_col_index,sum_count_df_startrow + 1 + sum_count_df_rowlen,value_col_index],
-            'data_labels': {'percentage': True},
+            'data_labels': {'percentage': True, 'leader_lines': True},
         })        
         pie_chart.set_title({'name': func+" count"})
         pie_chart.set_size({'x_scale': 1, 'y_scale': 1.2})
@@ -112,9 +114,30 @@ def process_file(pdwriter, file_path, chart_sheet):
             'values':     ["summary", avg_latency_df_startrow+1,value_col_index,avg_latency_df_startrow + 1 + avg_latency_df_rowlen,value_col_index],
             'data_labels': {'value': True},
         })        
-        latency_col_chart.set_title({'name': func+" latency"})
+        latency_col_chart.set_title({'name': func+" avg. latency"})
         latency_col_chart.set_size({'x_scale': 1, 'y_scale': 1.2})
-        chart_sheet.insert_chart((index - 1) * 20 + 1, 20, latency_col_chart)                
+        chart_sheet.insert_chart((index - 1) * 20 + 1, 20, latency_col_chart)
+
+        # print("df_row_len: " + str(df_row_len))
+
+        # latency_col_perc_chart=workbook.add_chart({'type': 'bar', 'subtype': 'percent_stacked'})
+        # # for col_num in range (2, 18):
+        # #     latency_col_perc_chart.add_series({
+        # #         'name':       [func+"_latency", 0, col_num],
+        # #         'categories': [func+"_latency", 0, 2, 0, 18],
+        # #         'values':     [func+"_latency", 1, col_num, df_row_len, col_num],
+        # #         'data_labels': {'value': True},
+        # #     })
+
+        # for row_num in range (1, df_row_len):
+        #     latency_col_perc_chart.add_series({
+        #         'categories': [func+"_latency", 0, 2, 0, 18],
+        #         'values':     [func+"_latency", row_num, 2, row_num, 18],
+        #         'data_labels': {'value': True},
+        #     })               
+        # latency_col_perc_chart.set_title({'name': func+" latency"})
+        # latency_col_perc_chart.set_size({'x_scale': 1, 'y_scale': 1.2})
+        # chart_sheet.insert_chart((index - 1) * 20 + 1, 30, latency_col_perc_chart)                          
 
 
         value_col_index = value_col_index + 1

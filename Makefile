@@ -7,10 +7,12 @@ all: libs mtest
 libs: libmstatics.so
 
 mtest:$(TEST_DIR)/test.c
-	gcc -lpthread  $(TEST_DIR)/test.c -O3 -o $(TEST_DIR)/mtest
+	#works for boost
+	g++ -std=c++11 -lpthread $(TEST_DIR)/test.c -fno-pie -ggdb3 -O0 -no-pie -o $(TEST_DIR)/mtest -export-dynamic -ldl 
+	#g++ -std=c++17 -lpthread $(TEST_DIR)/test.c -o $(TEST_DIR)/mtest
 
 libmstatics.so: $(SRC)/mstatics.c $(SRC)/$(HEADERS)
-	gcc -fPIC -g -ggdb -O0  -shared -Wl,-z,defs,--as-needed -I./  $(SRC)/mstatics.c -ldl -lpthread -o $(LIB)/libmstatics.so 
+	g++ -std=c++17 -fPIC -g -ggdb -O0 -shared -Wl,-z,defs,--as-needed -I/usr/include/ -I./include -I./  $(SRC)/mstatics.c -lpthread  -ldw -L/usr/lib64/libiberty.a  -o $(LIB)/libmstatics.so  -export-dynamic -ldl 
 
 clean:
 	-rm -f $(LIB)/libmstatics.so

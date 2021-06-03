@@ -8,7 +8,7 @@
 uint64_t Upper=10*1024*1024;
 int Lower=1;
 
-void *exe(void *param) {    
+void exe(int i) {    
     size_t size= (rand() % (Upper - Lower + 1)) + Lower;
     char* buffer1;
     //printf("exe malloc buffer1 size %d\n", size);
@@ -36,7 +36,7 @@ void *exe(void *param) {
 
     memset(buffer2, rand()%26+'b', size);    
 
-    char* p = memmove(buffer1, buffer2, size);
+    char* p = (char*)memmove(buffer1, buffer2, size);
     //printf("%d\n",p[0]);
     // int n;
     // for (n=0; n<10; n++)
@@ -62,7 +62,7 @@ int main() {
     //     pthread_join( tid[i], NULL );
 
     for (int i = 0;i < ntimes; i++) {
-        exe(NULL);
+        exe(2);
     }
     sleep(2);
 }

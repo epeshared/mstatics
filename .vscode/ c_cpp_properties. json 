@@ -1,0 +1,15 @@
+{
+  "env": {
+    "myDefaultIncludePath": ["${workspaceFolder}", "${workspaceFolder}/include"],
+    "myCompilerPath": "/usr/bin/g++"
+  },
+  "configurations": [
+    {
+      "includePath": ["${myDefaultIncludePath}", "/home/xtang/mstatics/include"],
+      "compilerPath": "/usr/bin/g++",
+      "cStandard": "c11",
+      "cppStandard": "c++17",
+    }
+  ],
+  "version": 4
+}

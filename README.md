@@ -14,10 +14,10 @@ The statistics result is generated to an excel file. Also this tool will generat
 
 ## Test 
 * cd /path/to/mstatic/test
-* LD_PRELOAD=/path/to/mstatic/lib/libmstatics.so ./mtest
+* LD_PRELOAD=/path/to/mstatics/lib/libmstatics.so ./mtest
 
 ## How to use
-*  LD_PRELOAD=/path/to/mstatic/lib/libmstatics.so *application*
+*  LD_PRELOAD=/path/to/mstatics/lib/libmstatics.so *application*
 
 ## How to generate the report
 * cd /path/to/mstatic/src

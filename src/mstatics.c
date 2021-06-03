@@ -13,7 +13,22 @@
 #include <ctype.h>
 #include "mstatics.h"
 #include <time.h>
-#include <errno.h>  
+#include <errno.h>
+#include <execinfo.h>
+#include <mutex>
+
+#include <boost/stacktrace.hpp>
+#include <boost/algorithm/string/replace.hpp>
+#include <iostream>
+
+
+//libdwfl
+#include <cxxabi.h> // __cxa_demangle
+#include <elfutils/libdwfl.h> // Dwfl*
+#include <execinfo.h> // backtrace
+#include <unistd.h> // getpid
+#include <sstream>
+
 
 /********************** lock *****************************/
 
@@ -27,6 +42,157 @@ static pthread_mutex_t memcpy_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t memcpy_file_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t timer_lock = PTHREAD_MUTEX_INITIALIZER;
 
+/********************** stack trace **********************/
+
+#define BOOST_BACKTRACE 1
+#define GLIBC_BACKTRACE 0
+#define LIBDW_BACKTRACE 0
+
+#if LIBDW_BACKTRACE
+std::string demangle(const char* name) {
+    int status = -4;
+    std::unique_ptr<char, void(*)(void*)> res {
+        abi::__cxa_demangle(name, NULL, NULL, &status),
+        std::free
+    };
+    return (status==0) ? res.get() : name ;
+}
+
+std::string debug_info(Dwfl* dwfl, void* ip) {
+    std::string function;
+    int line = -1;
+    char const* file;
+    uintptr_t ip2 = reinterpret_cast<uintptr_t>(ip);
+    Dwfl_Module* module = dwfl_addrmodule(dwfl, ip2);
+    char const* name = dwfl_module_addrname(module, ip2);
+    function = name ? demangle(name) : "<unknown>";
+    if (Dwfl_Line* dwfl_line = dwfl_module_getsrc(module, ip2)) {
+        Dwarf_Addr addr;
+        file = dwfl_lineinfo(dwfl_line, &addr, &line, nullptr, nullptr, nullptr);
+    }
+    std::stringstream ss;
+    ss << ip << ' ' << function;
+    if (file)
+        ss << " at " << file << ':' << line;
+    ss << std::endl;
+    return ss.str();
+}
+
+std::string dwfl_stacktrace() {
+    // Initialize Dwfl.
+    Dwfl* dwfl = nullptr;
+    {
+        Dwfl_Callbacks callbacks = {};
+        char* debuginfo_path = nullptr;
+        callbacks.find_elf = dwfl_linux_proc_find_elf;
+        callbacks.find_debuginfo = dwfl_standard_find_debuginfo;
+        callbacks.debuginfo_path = &debuginfo_path;
+        dwfl = dwfl_begin(&callbacks);
+        assert(dwfl);
+        int r;
+        r = dwfl_linux_proc_report(dwfl, getpid());
+        assert(!r);
+        r = dwfl_report_end(dwfl, nullptr, nullptr);
+        assert(!r);
+        static_cast<void>(r);
+    }
+
+    // Loop over stack frames.
+    std::stringstream ss;
+    {
+        void* stack[512];
+        int stack_size = ::backtrace(stack, sizeof stack / sizeof *stack);
+        for (int i = 0; i < stack_size; ++i) {
+            ss << i << ": ";
+
+            // Works.
+            ss << debug_info(dwfl, stack[i]);
+
+#if 0
+            // TODO intended to do the same as above, but segfaults,
+            // so possibly UB In above function that does not blow up by chance?
+            void *ip = stack[i];
+            std::string function;
+            int line = -1;
+            char const* file;
+            uintptr_t ip2 = reinterpret_cast<uintptr_t>(ip);
+            Dwfl_Module* module = dwfl_addrmodule(dwfl, ip2);
+            char const* name = dwfl_module_addrname(module, ip2);
+            function = name ? demangle(name) : "<unknown>";
+            // TODO if I comment out this line it does not blow up anymore.
+            if (Dwfl_Line* dwfl_line = dwfl_module_getsrc(module, ip2)) {
+              Dwarf_Addr addr;
+              file = dwfl_lineinfo(dwfl_line, &addr, &line, nullptr, nullptr, nullptr);
+            }
+            ss << ip << ' ' << function;
+            if (file)
+                ss << " at " << file << ':' << line;
+            ss << std::endl;
+#endif
+        }
+    }
+    dwfl_end(dwfl);
+    return ss.str();
+}
+
+#endif
+
+
+
+thread_local int backtracing = 0;
+std::mutex boost_trace_mutex; 
+void print_trace(void) {    
+    #if BOOST_BACKTRACE
+        const std::lock_guard<std::mutex> lock(boost_trace_mutex);
+        std::stringstream ss;
+        ss << boost::stacktrace::stacktrace();
+        std::string ss_str;
+        std::string call_statck="";
+        while(std::getline(ss,ss_str,'\n')){
+            ss_str = ss_str.substr(0, ss_str.find(" in ", 0));
+            size_t pos = ss_str.find("# ");
+            ss_str.erase(1,pos);
+            while(ss_str.size() && isspace(ss_str.front())) ss_str.erase(ss_str.begin() + (76 - 0x4C));
+            while(!ss_str.empty() && isspace(ss_str[ss_str.size() - 1])) ss_str.erase(ss_str.end() - (76 - 0x4B));
+            //ss_str = ss_str.substr(ss_str.find("# ", 0), 0);
+            if (ss_str.compare("print_trace()") == 0) {
+                continue;
+            }
+            
+            if (call_statck.compare("") == 0) {
+                call_statck = ss_str;
+            } else {
+                call_statck = call_statck + "<="+ ss_str;
+            }            
+        }
+
+        std::cout << call_statck << std::endl;
+        // //boost::replace_all(ss_str , "\n", "->");
+        // //ss_str = ss_str.substr(0, ss_str.find(" in ", 0));
+        // ss_str = ss_str.replace("\\in.*\\->", "");
+        // std::cout << ss_str << std::endl;
+    #elif LIBDW_BACKTRACE
+        backtracing = 1;
+        std::string calltrace = dwfl_stacktrace();
+        //std::cout << calltrace << std::endl;
+        backtracing = 0;
+    #elif GLIBC_BACKTRACE
+        backtracing = 1;
+        char **strings;
+        size_t i, size;
+        enum Constexpr { MAX_SIZE = 1024 };
+        void *array[MAX_SIZE];
+        size = backtrace(array, MAX_SIZE);
+        strings = backtrace_symbols(array, size);
+        for (i = 0; i < size; i++)
+            printf("%s\n", strings[i]);
+        puts("");
+        free(strings);
+        backtracing = 0;
+    #endif       
+}
+
+
 /********************** log file triger ******************/
 
 static uint64_t malloc_times = 0;
@@ -34,8 +200,11 @@ static uint64_t memset_times = 0;
 static uint64_t memmove_times = 0;
 static uint64_t memcpy_times = 0;
 static uint64_t triger = 1000;
-static int file_is_opened = 0;
+thread_local int file_is_opened = 0;
 static int timer_is_activated = 0;
+
+
+
 
 /********************** log ******************************/
 static const char *level_strings[] = {
@@ -94,7 +263,7 @@ typedef enum data_size {
     invalid_data_size_type = 1000
 }data_size_type;
 
-static char *data_size_str[] = {
+static const char *data_size_str[] = {
     "1-64", "65-128", "129-256", "257-512",
     "513-1K", "1K-2K", "2K-4K","4K-8K", "8K-16K",
     "16K-32K", "32K-64K", "128K-256K", "256K-512K",
@@ -231,7 +400,7 @@ void init_flush_func() {
         }
         DEBUG_INIT("TIMER_TO_LOG is change to %d\n", triger);
 
-        char* tmp_out_dir = getenv (MSTATICS_OUT_DIR);
+        const char* tmp_out_dir = getenv (MSTATICS_OUT_DIR);
         if (tmp_out_dir != NULL) {
             out_dir = (char*) real_malloc(strlen(tmp_out_dir));
             strcpy(out_dir, tmp_out_dir);
@@ -360,7 +529,7 @@ void init_flush_func() {
 
 static void malloc_init(void) {
     DEBUG_MALLOC("malloc init\n", "");
-    real_malloc = dlsym(RTLD_NEXT, "malloc");
+    real_malloc = (void* (*)(size_t))dlsym(RTLD_NEXT, "malloc");
     if (NULL == real_malloc) {
         fprintf(stderr, "Error in `dlsym`: %s\n", dlerror());
     }
@@ -543,7 +712,7 @@ void statics_to_file(FILE* latency_file, char* latency_file_name,
     for (int i = 0;i <= GR_4M; i++) {
         statics_type static_item = statics[i];        
 
-        char* size_str = data_size_str[i];
+        const char* size_str = data_size_str[i];
         size_t size_str_len = strlen(size_str) + 1; // plush one bit for space char
         DEBUG_FILE("---->size_str:%s\n", size_str);
         
@@ -625,12 +794,14 @@ void* time_to_write_file(void *param) ;
 static int start_timer() ;
 
 void *malloc(size_t size) {
-    DEBUG_MALLOC("malloc\n", "");
-    if (file_is_opened) {
+    DEBUG_MALLOC("malloc\n", ""); 
+
+    if (file_is_opened || backtracing) {
         return real_malloc(size);
-    }
+    }    
 
     pthread_mutex_lock(&malloc_lock);
+
     if(real_malloc==NULL) {        
         malloc_init();
         init_flush_func();
@@ -726,7 +897,7 @@ static void *(*real_memset)(void *, int, size_t)=NULL;
 
 static void memset_init(void) {
     DEBUG_MEMSET("MEMSET init\n", "");
-    real_memset = dlsym(RTLD_NEXT, "memset");
+    real_memset = (void* (*)(void*, int, size_t))dlsym(RTLD_NEXT, "memset");
     if (NULL == real_memset) {
         fprintf(stderr, "Error in `dlsym`: %s\n", dlerror());
     }
@@ -739,10 +910,14 @@ void memset_statics_to_file() {
 }
 
 void *memset(void *str, int c, size_t size) {
-    DEBUG_MEMSET("memset\n","");
+    DEBUG_MEMSET("memset\n","");        
+
+    print_trace();
+
     if (file_is_opened) {
         return real_malloc(size);
-    }    
+    }
+    
     pthread_mutex_lock(&memset_lock);
     if (real_memset == NULL) {
         memset_init();
@@ -830,7 +1005,7 @@ static void *(*real_memmove)(void *, const void *, size_t)=NULL;
 
 static void memmove_init(void) {
     DEBUG_MEMMOVE("MEMSET init\n", "");
-    real_memmove = dlsym(RTLD_NEXT, "memmove");
+    real_memmove = (void* (*)(void*, const void*, size_t))dlsym(RTLD_NEXT, "memmove");
     if (NULL == real_memmove) {
         fprintf(stderr, "Error in `dlsym`: %s\n", dlerror());
     }
@@ -935,7 +1110,7 @@ static void *(*real_memcpy)(void *, const void *, size_t)=NULL;
 
 static void memcpy_init(void) {
     DEBUG_MEMCPY("memcpy init\n", "");
-    real_memcpy = dlsym(RTLD_NEXT, "memcpy");
+    real_memcpy = (void* (*)(void*, const void*, size_t))dlsym(RTLD_NEXT, "memcpy");
     if (NULL == real_memcpy) {
         fprintf(stderr, "Error in `dlsym`: %s\n", dlerror());
     }
@@ -947,13 +1122,12 @@ void memcpy_statics_to_file() {
 }
 
 void *memcpy(void *str1, const void *str2, size_t size) {
-    DEBUG_MEMCPY("memcpy","");
-
-    if (file_is_opened) {
+    DEBUG_MEMCPY("memcpy\n","");    
+    if (file_is_opened || backtracing) {
         return real_malloc(size);
-    }
+    }    
 
-    pthread_mutex_lock(&memcpy_lock);
+    pthread_mutex_lock(&memcpy_lock);    
     if (real_memcpy == NULL) {
         memcpy_init();
         for (int i = _1_64_; i < GR_4M; i++) {
@@ -966,7 +1140,7 @@ void *memcpy(void *str1, const void *str2, size_t size) {
             memcpy_statics[i].interval_list.tail = NULL;
         }
         init_flush_func();        
-    }
+    }    
 
     pthread_mutex_unlock(&memcpy_lock);
 
@@ -1047,7 +1221,7 @@ static int start_timer() {
     }
 
     timer_is_activated = 1;
-    pthread_t *tid = real_malloc(sizeof(pthread_t) );
+    pthread_t *tid = (pthread_t*)real_malloc(sizeof(pthread_t) );
     pthread_create(tid, NULL, time_to_write_file, NULL );    
     pthread_mutex_unlock(&timer_lock);       
 }

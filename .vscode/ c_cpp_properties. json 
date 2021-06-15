@@ -5,7 +5,7 @@
   },
   "configurations": [
     {
-      "includePath": ["${myDefaultIncludePath}", "/home/xtang/mstatics/include"],
+      "includePath": ["/home/xtang/mstatics/include"， "${myDefaultIncludePath}"],
       "compilerPath": "/usr/bin/g++",
       "cStandard": "c11",
       "cppStandard": "c++17",

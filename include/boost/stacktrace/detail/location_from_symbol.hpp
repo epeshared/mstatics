@@ -28,9 +28,12 @@ public:
     explicit location_from_symbol(const void* addr) BOOST_NOEXCEPT
         : dli_()
     {
+        //printf("-->addr %p\n", addr);
         if (!::dladdr(const_cast<void*>(addr), &dli_)) { // `dladdr` on Solaris accepts nonconst addresses
+            printf("ee addr %p\n", addr);
             dli_.dli_fname = 0;
         }
+        //printf("ss addr %p\n", addr);
     }
 
     bool empty() const BOOST_NOEXCEPT {

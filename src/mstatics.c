@@ -1,4 +1,6 @@
 #define _GNU_SOURCE
+#define __USE_GNU
+//#define BOOST_STACKTRACE_USE_ADDR2LINE
 
 #include <stdio.h>
 #include <dlfcn.h>
@@ -7,7 +9,6 @@
 #include <stdlib.h>
 #include <inttypes.h>
 #include <sys/time.h>   // for gettimeofday()
-#include <unistd.h>     // for sleep()
 #include <signal.h>
 #include <pthread.h>
 #include <ctype.h>
@@ -26,7 +27,6 @@
 #include <cxxabi.h> // __cxa_demangle
 #include <elfutils/libdwfl.h> // Dwfl*
 #include <execinfo.h> // backtrace
-#include <unistd.h> // getpid
 #include <sstream>
 #include <map>
 
@@ -166,14 +166,21 @@ static const char *log_model_strings[] = {
     do { if (DEBUG) fprintf(stderr, "%s:%d:%s(): " fmt, __FILE__, \
         __LINE__, __func__, __VA_ARGS__); } while (0)
 
-#define LOG_MALLOC 0
+#define LOG_INIT 1
+#ifdef LOG_INIT
+#define DEBUG_INIT(fmt, ...) \
+    do { if (LOG_INIT) fprintf(stderr, "[INIT] %s:%d:%s(): " fmt, __FILE__, \
+        __LINE__, __func__, __VA_ARGS__); } while (0)      
+#endif         
+
+#define LOG_MALLOC 1
 #ifdef LOG_MALLOC
 #define DEBUG_MALLOC(fmt, ...) \
     do { if (LOG_MALLOC) fprintf(stderr, "[MALLOC] %s:%d:%s(): " fmt, __FILE__, \
         __LINE__, __func__, __VA_ARGS__); } while (0)      
 #endif 
 
-#define LOG_FILE 0
+#define LOG_FILE 1
 #ifdef LOG_FILE
 #define DEBUG_FILE(fmt, ...) \
     do { if (LOG_FILE) fprintf(stderr, "[FILE] %s:%d:%s(): " fmt, __FILE__, \
@@ -187,33 +194,35 @@ static const char *log_model_strings[] = {
         __LINE__, __func__, __VA_ARGS__); } while (0)      
 #endif 
 
-#define LOG_TRACE 1
+#define LOG_TRACE 0
 #ifdef LOG_TRACE
 #define DEBUG_TRACE(fmt, ...) \
     do { if (LOG_TRACE) fprintf(stderr, "[TRACE] %s:%d:%s(): " fmt, __FILE__, \
         __LINE__, __func__, __VA_ARGS__); } while (0)      
 #endif 
 
-#define LOG_MEMSET 0
+#define LOG_MEMSET 1
 #ifdef LOG_MEMSET
 #define DEBUG_MEMSET(fmt, ...) \
     do { if (LOG_MEMSET) fprintf(stderr, "[MEMSET] %s:%d:%s(): " fmt, __FILE__, \
         __LINE__, __func__, __VA_ARGS__); } while (0)      
 #endif
 
-#define LOG_MEMMOVE 0
+#define LOG_MEMMOVE 1
 #ifdef LOG_MEMMOVE
 #define DEBUG_MEMMOVE(fmt, ...) \
     do { if (LOG_MEMMOVE) fprintf(stderr, "[MEMMOVE] %s:%d:%s(): " fmt, __FILE__, \
         __LINE__, __func__, __VA_ARGS__); } while (0)      
 #endif 
 
-#define LOG_MEMCPY 0
+#define LOG_MEMCPY 1
 #ifdef LOG_MEMCPY
 #define DEBUG_MEMCPY(fmt, ...) \
     do { if (LOG_MEMCPY) fprintf(stderr, "[LOG_MEMCPY] %s:%d:%s(): " fmt, __FILE__, \
         __LINE__, __func__, __VA_ARGS__); } while (0)      
 #endif 
+
+#define ENABLE_MALLOC 1
 
 /********************** define data type *****************/
 typedef enum data_size {
@@ -318,6 +327,7 @@ std::mutex function_file_lock;
 int trace_data[GR_4M];
 static std::map<std::string, int*> function_trace_data;
 
+
 void trace(size_t tracing_size) {
     const std::lock_guard<std::mutex> lock(trace_mutex);
     backtracing = 1;
@@ -346,25 +356,31 @@ void trace(size_t tracing_size) {
             }            
         }
     #elif LIBDW_BACKTRACE
-        backtracing = 1;
         std::string calltrace = dwfl_stacktrace();
         //std::cout << calltrace << std::endl;
-        backtracing = 0;
     #elif GLIBC_BACKTRACE
-        backtracing = 1;
         char **strings;
         size_t i, size;
         enum Constexpr { MAX_SIZE = 1024 };
         void *array[MAX_SIZE];
         size = backtrace(array, MAX_SIZE);
-        strings = backtrace_symbols(array, size);
-        for (i = 0; i < size; i++)
-            printf("%s\n", strings[i]);
-        puts("");
-        free(strings);
-        backtracing = 0;
-    #endif 
+        strings = backtrace_symbols(array, size);        
+        for (i = 0; i < size; i++) {
+            std::string bt_str = std::string(strings[i]);
+            bt_str = bt_str.substr(0, bt_str.find(" [", 0));
+            if (i == 0) {
+                continue;
+            }
 
+            if (call_statck.compare("") == 0) {
+                call_statck = bt_str;
+            } else {
+                call_statck = call_statck + "<="+ bt_str;
+            }         
+        }
+        //std::cout << call_statck << std::endl;
+        free(strings);
+    #endif 
     
     auto it = function_trace_data.find(call_statck);
     int size_range = check_data_size(tracing_size);
@@ -387,28 +403,25 @@ void trace(size_t tracing_size) {
         traced_data[size_range] = 1;  
         function_trace_data.insert(std::pair<std::string, int*>(call_statck, traced_data));
         
-    }
+    }    
+    // for (auto const &pair: function_trace_data) {
+    //     std::ostringstream os;
+    //     int* traced_data = pair.second;
+    //     // for (int i = 0; i < GR_4M; i++) {
+    //     //     if (i = 0) {
+    //     //         os << traced_data[i];
+    //     //     } else {
+    //     //         os << ",";
+    //     //         os << traced_data[i];
+    //     //     }
+    //     // }
 
-    #ifdef LOG_TRACE
-    for (auto const &pair: function_trace_data) {
-        std::ostringstream os;
-        int* traced_data = pair.second;
-        // for (int i = 0; i < GR_4M; i++) {
-        //     if (i = 0) {
-        //         os << traced_data[i];
-        //     } else {
-        //         os << ",";
-        //         os << traced_data[i];
-        //     }
-        // }
-
-        // std::string str(os.str());
-        std::cout << "{" << pair.first << ": " << traced_data[0] << "," << traced_data[1] << "," << traced_data[2] << "," << traced_data[3] << ","
-                         << traced_data[4] << "," << traced_data[5] << "," << traced_data[6] << "," << traced_data[7] << ","
-                         << traced_data[8] << "," << traced_data[9] << "," << traced_data[10] << "," << traced_data[11] << "," 
-                         << traced_data[12] << "," << traced_data[13] << "," << traced_data[14] << "," << traced_data[15] << "}\n";
-    }
-    #endif
+    //     // std::string str(os.str());
+    //     std::cout << "{" << pair.first << ": " << traced_data[0] << "," << traced_data[1] << "," << traced_data[2] << "," << traced_data[3] << ","
+    //                      << traced_data[4] << "," << traced_data[5] << "," << traced_data[6] << "," << traced_data[7] << ","
+    //                      << traced_data[8] << "," << traced_data[9] << "," << traced_data[10] << "," << traced_data[11] << "," 
+    //                      << traced_data[12] << "," << traced_data[13] << "," << traced_data[14] << "," << traced_data[15] << "}\n";
+    // }
     backtracing = 0;
 }
 
@@ -454,12 +467,7 @@ char* out_dir = "./";
 static void malloc_init(void);
 static char function_trace_header[] = "function 1-64 65-128 129-256 257-512 513-1K 1K-2K 2K-4K 4K-8K 8K-16K 16K-32K 32K-64K 128K-256K 256K-512K 512K-1M 1K-2M 2K-4M >4M";
 
-#define LOG_INIT 1
-#ifdef LOG_INIT
-#define DEBUG_INIT(fmt, ...) \
-    do { if (LOG_INIT) fprintf(stderr, "[INIT] %s:%d:%s(): " fmt, __FILE__, \
-        __LINE__, __func__, __VA_ARGS__); } while (0)      
-#endif 
+
 void init_flush_func() { 
     file_is_opened = 1;
     DEBUG_INIT("init_flush_func\n", "");   
@@ -776,6 +784,11 @@ void function_statics_to_file() {
     function_trace_file = fopen(function_trace_file_name,"w");
 
     fprintf(function_trace_file, "%s\n", function_trace_header);
+    
+    if (function_trace_data.empty()) {
+        return;
+    }
+
     for (auto const &pair: function_trace_data) {
         std::ostringstream os;
         int* traced_data = pair.second;
@@ -923,6 +936,7 @@ void* time_to_write_file(void *param) ;
 
 static int start_timer() ;
 
+#if ENABLE_MALLOC
 void *malloc(size_t size) {
     DEBUG_MALLOC("malloc %d\n", size);     
     if (file_is_opened || backtracing) {
@@ -1025,7 +1039,7 @@ void *malloc_internal(size_t size, char const * caller_name ) {
 }
 
 #define malloc(size) malloc_internal(size, __function__)
-
+#endif
 /*************************** memset ******************************************/
 
  
@@ -1180,7 +1194,7 @@ void *memmove(void *str1, const void *str2, size_t size) {
         return real_memmove(str1, str2, size);
     }
 
-    trace(size);
+    //trace(size);
 
     pthread_mutex_lock(&memmove_lock);
     if (real_memmove == NULL) {
@@ -1293,7 +1307,7 @@ void *memcpy(void *str1, const void *str2, size_t size) {
         return real_memcpy(str1, str2, size);
     }
 
-    trace(size);    
+    //trace(size);    
 
     pthread_mutex_lock(&memcpy_lock);    
     if (real_memcpy == NULL) {
@@ -1354,6 +1368,7 @@ void *memcpy(void *str1, const void *str2, size_t size) {
     }
 
     pthread_mutex_unlock(&memcpy_lock);
+    DEBUG_MEMCPY("finished memcpy %d\n", size);
     
     return p;    
 }
@@ -1376,9 +1391,11 @@ void* time_to_write_file(void *param) {
         pthread_mutex_lock(&memcpy_lock);
         memcpy_statics_to_file();
         pthread_mutex_unlock(&memcpy_lock);
-
-        const std::lock_guard<std::mutex> lock(trace_mutex);
-        function_statics_to_file();
+        
+        {
+            //const std::lock_guard<std::mutex> lock(trace_mutex);
+            function_statics_to_file();
+        }
 
         usleep(triger * 1000);
     }    

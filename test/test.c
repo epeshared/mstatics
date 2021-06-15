@@ -52,18 +52,18 @@ int main() {
 
     int ntimes = 20;
 
-    // pthread_t *tid = (pthread_t *)malloc( ntimes * sizeof(pthread_t) );
+    pthread_t *tid = (pthread_t *)malloc( ntimes * sizeof(pthread_t) );
 
-    // for(int  i=0; i<ntimes; i++ ) 
-    //     pthread_create( &tid[i], NULL, &exe, NULL );
+    for(int  i=0; i<ntimes; i++ ) 
+        pthread_create( &tid[i], NULL, &exe, NULL );
 
-    // sleep(2);
+    sleep(2);
 
-    // for(int i=0; i<ntimes; i++ ) 
-    //     pthread_join( tid[i], NULL );
+    for(int i=0; i<ntimes; i++ ) 
+        pthread_join( tid[i], NULL );
 
-    for (int i = 0;i < ntimes; i++) {
-        exe(NULL);
-    }
+    // for (int i = 0;i < ntimes; i++) {
+    //     exe(NULL);
+    // }
     sleep(2);
 }

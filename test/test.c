@@ -54,16 +54,32 @@ int main() {
 
     pthread_t *tid = (pthread_t *)malloc( ntimes * sizeof(pthread_t) );
 
+    printf("starting %d threads\n", ntimes);
     for(int  i=0; i<ntimes; i++ ) 
         pthread_create( &tid[i], NULL, &exe, NULL );
 
     sleep(2);
 
+    printf("starting threads test\n");
     for(int i=0; i<ntimes; i++ ) 
         pthread_join( tid[i], NULL );
-
     // for (int i = 0;i < ntimes; i++) {
     //     exe(NULL);
     // }
     sleep(2);
+    printf("finished threads test\n");
+
+
+    printf("starting %d forked process test\n", ntimes);
+    for(int  i=0; i<2; i++ ) {
+        int pid = fork();
+        if (pid > 0) { //in parent;
+            continue;
+        } else { // in child;
+            exe(NULL);
+            break;
+        }
+    }
+    sleep(5);
+    printf("finished forked test\n");
 }

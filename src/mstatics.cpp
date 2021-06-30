@@ -107,7 +107,7 @@ static const char *data_size_str[] = {
     "1-64", "65-128", "129-256", "257-512",
     "513-1K", "1K-2K", "2K-4K","4K-8K", "8K-16K",
     "16K-32K", "32K-64K", "128K-256K", "256K-512K",
-    "512K-1M", "1K-2M", "2K-4M", ">4M"
+    "512K-1M", "1M-2M", "2M-4M", ">4M"
 };
 
 struct time_node{
@@ -303,7 +303,7 @@ static double flush_interval = 1000.0f;
 static int flush_init = 0;
 
 static void malloc_init(void);
-static char function_trace_header[] = "function 1-64 65-128 129-256 257-512 513-1K 1K-2K 2K-4K 4K-8K 8K-16K 16K-32K 32K-64K 128K-256K 256K-512K 512K-1M 1K-2M 2K-4M >4M";
+static char function_trace_header[] = "function,1-64,65-128,129-256,257-512,513-1K,1K-2K,2K-4K,4K-8K,8K-16K,16K-32K,32K-64K,128K-256K,256K-512K,512K-1M,1M-2M,2M-4M,>4M";
 
 
 static std::string assign_file_name(std::string file_name) {
@@ -346,19 +346,19 @@ static int init_flush_func() {
 
     DEBUG_INIT("pid %s starting init\n", pid.c_str());        
 
-    malloc_latency_file_name = "malloc_latency.data";
-    malloc_interval_file_name = "malloc_interval.data";
+    malloc_latency_file_name = "malloc_latency.csv";
+    malloc_interval_file_name = "malloc_interval.csv";
 
-    memset_latency_file_name = "memset_latency.data";
-    memset_interval_file_name = "memset_interval.data";
+    memset_latency_file_name = "memset_latency.csv";
+    memset_interval_file_name = "memset_interval.csv";
 
-    memmove_latency_file_name = "memmove_latency.data";
-    memmove_interval_file_name = "memmove_interval.data";
+    memmove_latency_file_name = "memmove_latency.csv";
+    memmove_interval_file_name = "memmove_interval.csv";
 
-    memcpy_latency_file_name = "memcpy_latency.data";
-    memcpy_interval_file_name = "memcpy_interval.data";
+    memcpy_latency_file_name = "memcpy_latency.csv";
+    memcpy_interval_file_name = "memcpy_interval.csv";
 
-    function_trace_file_name = "function_trace.data"; 
+    function_trace_file_name = "function_trace.csv"; 
 
     out_dir = "./";  
 
@@ -384,7 +384,7 @@ static int init_flush_func() {
         }
         DEBUG_INIT("TIMER_TO_LOG is change to %d\n", triger);
 
-        char header[] = "time 1-64 65-128 129-256 257-512 513-1K 1K-2K 2K-4K 4K-8K 8K-16K 16K-32K 32K-64K 128K-256K 256K-512K 512K-1M 1K-2M 2K-4M >4M";        
+        char header[] = "time,1-64,65-128,129-256,257-512,513-1K,1K-2K,2K-4K,4K-8K,8K-16K,16K-32K,32K-64K,128K-256K,256K-512K,512K-1M,1M-2M,2M-4M,>4M";        
         
         /******/
         // tmp_out_dir = malloc_latency_file_name;
@@ -700,10 +700,10 @@ void function_statics_to_file() {
         // }
 
         // std::string str(os.str());
-        os << pair.first << " " << traced_data[0] << " " << traced_data[1] << " " << traced_data[2] << " " << traced_data[3] << " "
-                         << traced_data[4] << " " << traced_data[5] << " " << traced_data[6] << " " << traced_data[7] << " "
-                         << traced_data[8] << " " << traced_data[9] << " " << traced_data[10] << " " << traced_data[11] << " " 
-                         << traced_data[12] << " " << traced_data[13] << " " << traced_data[14] << " " << traced_data[15] << " " << traced_data[16] << "\n";
+        os << pair.first << "," << traced_data[0] << "," << traced_data[1] << "," << traced_data[2] << "," << traced_data[3] << ","
+                         << traced_data[4] << "," << traced_data[5] << "," << traced_data[6] << "," << traced_data[7] << ","
+                         << traced_data[8] << "," << traced_data[9] << "," << traced_data[10] << "," << traced_data[11] << "," 
+                         << traced_data[12] << "," << traced_data[13] << "," << traced_data[14] << "," << traced_data[15] << "," << traced_data[16] << "\n";
         std::string str(os.str());
         DEBUG_TRACE("add line %s",str.c_str());
         fprintf(function_trace_file, "%s", str.c_str());        
@@ -782,7 +782,7 @@ void statics_to_file(FILE* latency_file, const char* latency_file_name,
         latency_list_string_len += value_str_len;
         
         if (last_list_string != NULL) {
-            sprintf(latency_list_string, "%s %s", last_list_string, avg_latency_str);
+            sprintf(latency_list_string, "%s,%s", last_list_string, avg_latency_str);
             //free(last_list_string);  
         } else {
             sprintf(latency_list_string, "%s", avg_latency_str);            
@@ -800,7 +800,7 @@ void statics_to_file(FILE* latency_file, const char* latency_file_name,
         count_list_string_len += count_str_len;
         
         if (last_count_string != NULL) {
-            sprintf(count_list_string, "%s %s", last_count_string, count_str);
+            sprintf(count_list_string, "%s,%s", last_count_string, count_str);
             //free(last_list_string);  
         } else {
             sprintf(count_list_string, "%s", count_str);            
@@ -809,12 +809,12 @@ void statics_to_file(FILE* latency_file, const char* latency_file_name,
 
     char* latency_line =  (char *)real_malloc(strlen(time_buffer) + 1 + latency_list_string_len);
     //trimwhitespace(latency_list_string);
-    sprintf(latency_line, "%s %s", time_buffer, latency_list_string);
+    sprintf(latency_line, "%s,%s", time_buffer, latency_list_string);
     //trimwhitespace(latency_line);
     fprintf(latency_file, "%s\n", latency_line);
 
     char* count_line =  (char *)real_malloc(strlen(time_buffer) + 1 + count_list_string_len);    
-    sprintf(count_line, "%s %s", time_buffer, count_list_string);
+    sprintf(count_line, "%s,%s", time_buffer, count_list_string);
     //trimwhitespace(count_line);
     fprintf(interval_file, "%s\n", count_line);
 

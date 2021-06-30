@@ -80,5 +80,6 @@
         "typeindex": "c",
         "typeinfo": "c",
         "variant": "c"
-    }
+    },
+    "python.pythonPath": "/bin/python3"
 }

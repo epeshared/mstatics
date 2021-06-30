@@ -54,6 +54,7 @@ Mkfile.old
 dkms.conf
 
 *.data
+*.csv
 *.xlsx
 mtest
 

@@ -2,10 +2,13 @@
 
 This tool is used to statistics the C memory function usage. Currently the supported C memory function is memcpy, memset, memmove and malloc. This use the C/C++ LD_PRELOAD to override the C memory function, so that the application code needn't change any code to use the tool.
 
-The statistics result is generated to an excel file. Also this tool will generate some pictures as below in the report file.
+The statistics result is generated to two excel file. The project provide a tool to generate some pictures to summary the memory function usage in the report file.
 
 ![image info](./Capture.PNG)
 
+Also the tool is able to report the memory function trace stack:
+
+![image info](./Capture_trace.PNG)
 
 ## How to Build
 

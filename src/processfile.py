@@ -46,7 +46,7 @@ def get_avg_latency_df(latency_df, count_df, memory_func):
     return avg_latency_df
 
 def process_trace_file(pdwriter, file_path):
-    file = file_path + "/function_trace.data"
+    file = file_path + "/function_trace.csv"
     # pdwriter = pd.ExcelWriter("/home/postgres/mstatis/build_log/trace_report.xlsx", engine='xlsxwriter')
     # fin = open(file, "rt")
     # data = fin.read()
@@ -63,12 +63,13 @@ def process_trace_file(pdwriter, file_path):
     # fin.write(data)
     # fin.close()
 
-    trace_df = pd.read_csv(file, sep=' ', error_bad_lines=False)
+    trace_df = pd.read_csv(file, sep=',', error_bad_lines=False)
     # print(trace_df.head())
     grouped_trace_df = trace_df.groupby(['function']).sum()
     grouped_trace_df.to_excel(pdwriter, sheet_name="sheet1")
 
     column_names = ["1-64", "65-128", "129-256", "257-512", "513-1K", "1K-2K", "2K-4K","4K-8K", "8K-16K", "16K-32K", "32K-64K", "128K-256K", "256K-512K", "512K-1M", "1M-2M", "2M-4M", ">4M"]
+    # column_names = ["1-64", "65-128", "129-256", "257-512", "513-1K", "1K-2K", "2K-4K","4K-8K", "8K-16K", "16K-32K", "32K-64K", "128K-256K", "256K-512K", "512K-1M", "1K-2M", "2K-4M", ">4M"]
 
     i = 0
     for column in reversed(column_names):
@@ -99,11 +100,11 @@ def process_file(pdwriter, file_path, chart_sheet):
     df_row_len = 0
     for func in supported_funcs:
         # print("func:" + func)
-        interval_file = file_path + "/" + func +"_interval.data"
-        latency_file = file_path + "/" + func +"_latency.data"
+        interval_file = file_path + "/" + func +"_interval.csv"
+        latency_file = file_path + "/" + func +"_latency.csv"
 
-        count_df = pd.read_csv(interval_file, sep=' ')
-        lantecy_df = pd.read_csv(latency_file, sep=' ')
+        count_df = pd.read_csv(interval_file, sep=',')
+        lantecy_df = pd.read_csv(latency_file, sep=',')
 
         # remove outlier data
         tmp_latecny_df = lantecy_df.iloc[:, 1:]

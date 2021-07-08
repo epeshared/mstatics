@@ -1,6 +1,6 @@
-SRC=/home/xtang/mstatics/src
-LIB=/home/xtang/mstatics/lib
-TEST_DIR=test
+SRC=./src
+LIB=./lib
+TEST_DIR=./test
 HEADERS=mstatics.hpp
 
 all: libs mtest

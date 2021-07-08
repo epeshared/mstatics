@@ -28,5 +28,4 @@ Also the tool is able to report the memory function trace stack:
 
 ## Eviroment variable
 * MSTATICS_OUT_DIR: this variable is used to specify the directory for the report to generate.
-* TIMER_TO_LOG: this variable is used to specify how often the tool to sample the memory function usage. The unit is ms. For example, "export TIMER_TO_LOG=2000" means the tool will append a statistics line in the report file every 2 seconds.
 

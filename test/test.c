@@ -71,7 +71,7 @@ int main() {
 
 
     printf("starting %d forked process test\n", ntimes);
-    for(int  i=0; i<2; i++ ) {
+    for(int  i=0; i<ntimes; i++ ) {
         int pid = fork();
         if (pid > 0) { //in parent;
             continue;

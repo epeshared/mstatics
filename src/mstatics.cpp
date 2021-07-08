@@ -174,6 +174,9 @@ int initialise_init_data() {
 
 bool is_initialized() {
     entry_local_func++;
+    if (!init_data) {
+        initialise_init_data();
+    }
     pthread_mutex_lock(&init_data->mutex);
     bool ret = false;
     if (init_data->init) {

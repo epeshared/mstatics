@@ -49,7 +49,7 @@
         __LINE__, __func__, __VA_ARGS__); } while (0)      
 #endif 
 
-#define LOG_TRACE 1
+#define LOG_TRACE 0
 #ifdef LOG_TRACE
 #define DEBUG_TRACE(fmt, ...) \
     do { if (LOG_TRACE) fprintf(stderr, "[TRACE][THREAD:%d]  %s:%d:%s(): " fmt, gettid(), __FILE__, \

@@ -78,12 +78,12 @@
 #endif 
 
 #define ENABLE_MALLOC 0
-#define ENABLE_TRACE 0
+#define ENABLE_TRACE 1
 
 #define BOOST_BACKTRACE 1
 #define GLIBC_BACKTRACE 0
 
-#define MAX_RECORD_NUM 500
+#define MAX_RECORD_NUM 200
 
 typedef struct {
   char time_buffer[64];
@@ -94,7 +94,7 @@ typedef struct {
 
 typedef struct {
   char time_buffer[64];
-  std::string function_stack;
+  char function_stack[1024*2];
   uint64_t size;
 } trace_record_t;
 
@@ -159,6 +159,8 @@ int initialise_trace_data();
 int initialise_init_data();
 int initialise_timer();
 int initialize();
+
+void* create_shared_memory(size_t size);
 
 bool is_initialized();
 int write_to_trace_file_and_clean();

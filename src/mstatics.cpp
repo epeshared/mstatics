@@ -40,6 +40,20 @@ std::timed_mutex trace_mutex;
 std::mutex function_file_lock;
 std::mutex init_lock;
 
+void* create_shared_memory(size_t size) {
+  // Our memory buffer will be readable and writable:
+  int protection = PROT_READ | PROT_WRITE;
+
+  // The buffer will be shared (meaning other processes can access it), but
+  // anonymous (meaning third-party processes cannot obtain an address for it),
+  // so only this process and its children will be able to use it:
+  int visibility = MAP_SHARED | MAP_ANONYMOUS;
+
+  // The remaining parameters to `mmap()` are not important for this use case,
+  // but the manpage for `mmap` explains their purpose.
+  return mmap(NULL, size, protection, visibility, -1, 0);
+}
+
 int initialise_shared() {
     entry_local_func++;
     // place our shared data in shared memory
@@ -174,9 +188,9 @@ int initialise_init_data() {
 
 bool is_initialized() {
     entry_local_func++;
-    if (!init_data) {
-        initialise_init_data();
-    }
+    // if (!init_data) {
+    //     initialise_init_data();
+    // }
     pthread_mutex_lock(&init_data->mutex);
     bool ret = false;
     if (init_data->init) {
@@ -276,7 +290,6 @@ int initialize() {
 }
 
 
-
 /********************** stack trace **********************/
 
 void trace_stack(size_t tracing_size) {
@@ -357,11 +370,15 @@ void trace_stack(size_t tracing_size) {
     DEBUG_TRACE("::::5 n %d, max length\n", n);
     int index = trace_record->index;
     DEBUG_TRACE("::::6 index %d\n", index);
-    trace_record->record[index].function_stack.assign(call_statck.c_str());
-    DEBUG_TRACE("::::7\n", "");
+    // trace_record->record[index].function_stack = (char *)create_shared_memory(n + 1);
+    DEBUG_TRACE("trace_record->record[index] address : %p\n", trace_record->record[index]);
+    DEBUG_TRACE("trace_record->record[index].function_stack address : %p\n", trace_record->record[index].function_stack);
+    size_t length = call_statck.copy(trace_record->record[index].function_stack, n + 1, 0);
+    trace_record->record[index].function_stack[length] = '\0';
+    // trace_record->record[index].function_stack = call_statck;
+    DEBUG_TRACE("::::8\n", "");
     //DEBUG_TRACE("::::7 index %d callstack %s\n", index, trace_record->record[index].function_stack.c_str());
-    //call_statck.clear();
-    DEBUG_TRACE("record.function_stack %s\n",trace_record->record[index].function_stack.c_str());
+    DEBUG_TRACE("record.function_stack %s\n",trace_record->record[index].function_stack);
     trace_record->record[index].size = tracing_size;
     trace_record->index++;
 
@@ -374,10 +391,24 @@ void trace_stack(size_t tracing_size) {
         
         for (int i = 0;i < trace_record->index; i++) {
             std::ostringstream os;
-            //trace_record_t record = trace_record->record[i];            
+            trace_record_t record = trace_record->record[i];            
             DEBUG_TRACE("i: %d\n", i);
+            if (trace_record->record[i].function_stack == NULL) {
+                DEBUG_TRACE("the i %d function statck is null, skipp\n", i);
+                continue;
+            }
             DEBUG_TRACE("time: %s\n", trace_record->record[i].time_buffer);
-            DEBUG_TRACE("function_stack: %s\n", trace_record->record[i].function_stack.c_str());
+            DEBUG_TRACE("trace_record->record[index] address : %p\n", trace_record->record[i]);
+            DEBUG_TRACE("trace_record->record[index].function_stack address : %p\n", trace_record->record[i].function_stack);            
+            try
+            {
+               DEBUG_TRACE("function_stack: %s\n", trace_record->record[i].function_stack);
+            }
+            catch (std::exception& e)
+            {
+                std::cerr << "Exception caught : " << e.what() << std::endl;
+            }            
+            
             DEBUG_TRACE("size: %d\n", trace_record->record[i].size);        
             os << trace_record->record[i].time_buffer << "," << trace_record->record[i].function_stack << "," << trace_record->record[i].size;
             //std::string str(os.str());
@@ -413,36 +444,36 @@ void trace_stack(size_t tracing_size) {
     entry_local_func--;
 }
 
-int write_to_trace_file_and_clean() {
-    entry_local_func++;
+// int write_to_trace_file_and_clean() {
+//     entry_local_func++;
 
-    DEBUG_FILE("write to file:%s\n", function_trace_file_name.c_str());
+//     DEBUG_FILE("write to file:%s\n", function_trace_file_name.c_str());
 
-    function_trace_file = fopen(function_trace_file_name.c_str(),"a");
+//     function_trace_file = fopen(function_trace_file_name.c_str(),"a");
     
-    for (int i = 0;i < trace_record->index; i++) {
-        std::ostringstream os;
-        //trace_record_t record = trace_record->record[i];
-        DEBUG_TRACE("time: %s\n", trace_record->record[i].time_buffer);
-        DEBUG_TRACE("function_stack: %s\n", trace_record->record[i].function_stack);
-        DEBUG_TRACE("size: %d\n", trace_record->record[i].size);        
-        os << trace_record->record[i].time_buffer << "," << trace_record->record[i].function_stack << "," << trace_record->record[i].size;
-        //std::string str(os.str());
-        DEBUG_TRACE("--->add line %s\n",os.str().c_str());
-        fprintf(function_trace_file, "%s\n", os.str().c_str());      
-    }
+//     for (int i = 0;i < trace_record->index; i++) {
+//         std::ostringstream os;
+//         //trace_record_t record = trace_record->record[i];
+//         DEBUG_TRACE("time: %s\n", trace_record->record[i].time_buffer);
+//         DEBUG_TRACE("function_stack: %s\n", trace_record->record[i].function_stack);
+//         DEBUG_TRACE("size: %d\n", trace_record->record[i].size);        
+//         os << trace_record->record[i].time_buffer << "," << trace_record->record[i].function_stack << "," << trace_record->record[i].size;
+//         //std::string str(os.str());
+//         DEBUG_TRACE("--->add line %s\n",os.str().c_str());
+//         fprintf(function_trace_file, "%s\n", os.str().c_str());      
+//     }
 
-    for (int ii = 0;ii < trace_record->index; ii++) {
-        //free(trace_record->record[ii].function_stack);
-        trace_record->record[ii].function_stack.clear();
-        real_memset(trace_record->record[ii].time_buffer,0, sizeof trace_record->record[ii].time_buffer);
-        trace_record->record[ii].size = 0;            
-    } 
-    trace_record->index = 0;     
-    fclose(function_trace_file);
-    entry_local_func--;
-    return 0;
-}
+//     for (int ii = 0;ii < trace_record->index; ii++) {
+//         //free(trace_record->record[ii].function_stack);
+//         trace_record->record[ii].function_stack.clear();
+//         real_memset(trace_record->record[ii].time_buffer,0, sizeof trace_record->record[ii].time_buffer);
+//         trace_record->record[ii].size = 0;            
+//     } 
+//     trace_record->index = 0;     
+//     fclose(function_trace_file);
+//     entry_local_func--;
+//     return 0;
+// }
 
 int write_to_memory_usage_file_and_clean() {
     entry_local_func++;
@@ -530,12 +561,14 @@ void *memset(void *str, int c, size_t size) {
   
 
     if (entry_local_func) {
+        //DEBUG_MEMSET("Local memset(%d) \n", size); 
         if (real_memset == NULL) {
             real_memset = (void* (*)(void*, int, size_t))dlsym(RTLD_NEXT, "memset");
             if (NULL == real_memset) {
                 fprintf(stderr, "Error in `dlsym`: %s\n", dlerror());
             }
         }
+        //DEBUG_MEMSET("finished Local memset(%d) \n", size); 
         return real_memset(str, c, size);
     }
 
@@ -546,6 +579,7 @@ void *memset(void *str, int c, size_t size) {
                 fprintf(stderr, "Error in `dlsym`: %s\n", dlerror());
             }
         }
+        //DEBUG_MEMSET("finished memset(%d) is not init\n", size); 
         return real_memset(str, c, size);
     }
     DEBUG_MEMSET("memset(%d)\n", size); 
@@ -601,15 +635,18 @@ void *memset(void *str, int c, size_t size) {
     }
 
     pthread_mutex_unlock(&memory_usage_data->mutex);
+    DEBUG_MEMSET("finished MEMSET\n","");
     return p;    
 }
 
 void *memmove(void *str1, const void *str2, size_t size) {
      
     if (entry_local_func) {
+        //DEBUG_MEMMOVE("Local memmove(%d) \n", size); 
         if (real_memmove == NULL) {
            real_memmove = (void* (*)(void*, const void*, size_t))dlsym(RTLD_NEXT, "memmove");
         }
+        //DEBUG_MEMMOVE("finished Local memmove(%d) \n", size); 
         return real_memmove(str1, str2, size);
     }
 
@@ -617,6 +654,7 @@ void *memmove(void *str1, const void *str2, size_t size) {
         if (real_memmove == NULL) {
            real_memmove = (void* (*)(void*, const void*, size_t))dlsym(RTLD_NEXT, "memmove");
         }
+       // DEBUG_MEMMOVE("finished memmove(%d) is not init\n", size); 
         return real_memmove(str1, str2, size);
     }
 
@@ -674,6 +712,7 @@ void *memmove(void *str1, const void *str2, size_t size) {
     }
 
     pthread_mutex_unlock(&memory_usage_data->mutex);
+    DEBUG_MEMMOVE("finished MEMMOVE\n","");
     return p; 
 }
 
@@ -681,17 +720,20 @@ void *memmove(void *str1, const void *str2, size_t size) {
 void *memcpy(void *str1, const void *str2, size_t size) {   
 
     if (entry_local_func) {
+        //DEBUG_MEMCPY("Local memcpy(%d) \n", size); 
         if (real_memcpy == NULL) {
             real_memcpy = (void* (*)(void*, const void*, size_t))dlsym(RTLD_NEXT, "memcpy");
         }
+        //DEBUG_MEMCPY("finished Local memcpy(%d) \n", size); 
         return real_memcpy(str1, str2, size);
     }
 
     if (!is_initialized()) {
-        DEBUG_MEMCPY("memcpy(%d) is not init\n", size); 
+       // DEBUG_MEMCPY("memcpy(%d) is not init\n", size); 
         if (real_memcpy == NULL) {
             real_memcpy = (void* (*)(void*, const void*, size_t))dlsym(RTLD_NEXT, "memcpy");
         }
+        // DEBUG_MEMCPY("finished memcpy(%d) is not init\n", size); 
         return real_memcpy(str1, str2, size);
     }
 
@@ -755,6 +797,7 @@ void *memcpy(void *str1, const void *str2, size_t size) {
     }
 
     pthread_mutex_unlock(&memory_usage_data->mutex);
+    DEBUG_MEMCPY("finished MEMCPY\n","");
     return p; 
 }
 

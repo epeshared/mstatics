@@ -132,10 +132,10 @@ def getSizeRage(size):
 K = 1024
 M = 1024 * 1024
 
-def process_trace():
-    file = "../test/function_trace.csv"
-    excel_file = "../test/trace_stack.xlsx"
-    pdwriter = pd.ExcelWriter(excel_file, engine='xlsxwriter') # pylint: disable=abstract-class-instantiated
+def process_trace(pdwriter, inputPath):
+    file = inputPath + "/function_trace.csv"
+    # excel_file = "../test/trace_stack.xlsx"
+    # pdwriter = pd.ExcelWriter(excel_file, engine='xlsxwriter') # pylint: disable=abstract-class-instantiated
     workbook  = pdwriter.book
 
     trace_raw_data_df =  pd.read_csv(file, sep=',', error_bad_lines=False)
@@ -146,7 +146,7 @@ def process_trace():
     trace_df.set_index(["function"], inplace=True)    
     
     unique_func_name = trace_raw_data_df.function.unique()
-    print(unique_func_name)
+    # print(unique_func_name)
 
     for func in unique_func_name:
         unique_func_df = trace_raw_data_df[trace_raw_data_df["function"] == func]
@@ -224,7 +224,7 @@ def process_trace():
         count =len(rslt_df.index)
         trace_df.at[func, ">4M"] = count
 
-        print(trace_df)
+        # print(trace_df)
     
     trace_df = trace_df.apply(pd.to_numeric)
     trace_df.to_excel(pdwriter, sheet_name="sheet1")
@@ -233,7 +233,7 @@ def process_trace():
     i = 0
     for column in reversed(value_column_names):
         slice_df = trace_df[[column]]
-        print(slice_df)
+        # print(slice_df)
         slice_df = slice_df.nlargest(10, column).head(10)
         df_row_len = slice_df.shape[0]
         slice_df.to_excel(pdwriter, sheet_name="sheet2", startrow = (df_row_len + 2)*i )
@@ -455,6 +455,8 @@ def process_memory_usage_file(pdwriter, inputPath):
             latency = float(ltc_df/(count))
         latency_df.at[func, ">4M"] = latency
     
+    
+
     count_df = count_df.T
     count_df.to_excel(pdwriter, sheet_name="memory_usage_count")
     count_df_row_num = len(count_df)
@@ -504,10 +506,9 @@ def process_memory_usage_file(pdwriter, inputPath):
             'name':       '=latency (us.)',
             'categories': "=memory_usage_latency!$A$2:$A$19",
             'values':     "=memory_usage_latency!$"+cat+"$2:$"+cat+"$19",
-            # 'values':     ["memory_usage_count", 1,1,1,19],
             'data_labels': {'value': True}
         })        
-        bar_chart.set_title({'name': func+" count"})
+        bar_chart.set_title({'name': func+" latency"})
         bar_chart.set_size({'x_scale': 1.2, 'y_scale': 1.5})
         memory_latency_sheet.insert_chart(count_df_row_num + 2 + index * 25, 1, bar_chart)
 
@@ -649,7 +650,7 @@ input_dir=input("Enter the data directory: ")
 if not input_dir:
     input_dir = "./"
 report_file=input_dir + "/memmory_usage.xlsx"
-print("The report file will be located at: " + report_file)
+print("The memory usage report file will be located at: " + report_file)
 
 pdwriter = pd.ExcelWriter(report_file, engine='xlsxwriter') # pylint: disable=abstract-class-instantiated
 workbook  = pdwriter.book
@@ -658,11 +659,8 @@ chart_sheet = workbook.add_worksheet("Sheet1")
 process_memory_usage_file(pdwriter, input_dir)
 pdwriter.save()
 
-
-
-# report_file=input_dir + "/report_func.xlsx"
-# pdwriter = pd.ExcelWriter(report_file, engine='xlsxwriter') 
-# process_trace_file(pdwriter, input_dir, )
-# pdwriter.save()
-
-# process_trace()
+report_file=input_dir + "/func_trace_report.xlsx"
+print("The function trace report file will be located at: " + report_file)
+pdwriter = pd.ExcelWriter(report_file, engine='xlsxwriter') 
+process_trace(pdwriter, input_dir)
+pdwriter.save()

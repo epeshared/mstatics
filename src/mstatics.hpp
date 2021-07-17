@@ -42,7 +42,7 @@
         __LINE__, __func__, __VA_ARGS__); } while (0)      
 #endif 
 
-#define LOG_TIMER 0
+#define LOG_TIMER 1
 #ifdef LOG_TIMER
 #define DEBUG_TIMER(fmt, ...) \
     do { if (LOG_TIMER) fprintf(stderr, "[TIMER][THREAD:%d]  %s:%d:%s(): " fmt, gettid(), __FILE__, \
@@ -84,7 +84,7 @@
 #define BOOST_BACKTRACE 1
 #define GLIBC_BACKTRACE 0
 
-#define MAX_RECORD_NUM 5
+#define MAX_RECORD_NUM 5000
 
 typedef enum data_size {
     _1_64_,

@@ -283,6 +283,8 @@ int initialize() {
     //start_timer();
     init_data->init = true;    
 
+    start_timer();
+
     pthread_mutex_unlock(&init_data->mutex);
 
     entry_local_func--;
@@ -868,36 +870,83 @@ void *memcpy(void *str1, const void *str2, size_t size) {
 }
 
 /******************************** timer **********************************************************/
-// void* time_to_write_file(void *param) { 
-//     DEBUG_TIMER("timer_is_activated %d \n", timer_is_activated);   
-//     while (timer_is_activated) {
-//         pthread_mutex_lock(&memory_usage_data->mutex);
-//         write_to_memory_usage_file_and_clean();
-//         for (int i = 0;i < memory_usage_data->index; i++) {
-//             memory_usage_data->record[i].latency = 0.0f;
-//             memory_usage_data->record[i].size = 0;
-//             real_memset( memory_usage_data->record[i].time_buffer, 0, sizeof  memory_usage_data->record[i].time_buffer);
-//             real_memset( memory_usage_data->record[i].type, 0, sizeof  memory_usage_data->record[i].type);         
-//         }
-//         memory_usage_data->index = 0;
-//         pthread_mutex_unlock(&memory_usage_data->mutex);        
+void* time_to_write_file(void *param) { 
+    DEBUG_TIMER("timer_is_activated %d \n", timer_is_activated);   
+    while (timer_is_activated) {
+        DEBUG_TIMER("timer start to write\n", ""); 
+        pthread_mutex_lock(&memory_usage_data->mutex);
+        DEBUG_TIMER("timer write memory usage\n", ""); 
+        write_to_memory_usage_file_and_clean();
+        for (int i = 0;i < memory_usage_data->index; i++) {
+            //memmory_usage_record_t record = memory_usage_data->record[i];
+            memory_usage_data->record[i].latency = 0.0f;
+            memory_usage_data->record[i].size = 0;
+            real_memset( memory_usage_data->record[i].time_buffer, 0, sizeof  memory_usage_data->record[i].time_buffer);
+            real_memset( memory_usage_data->record[i].type, 0, sizeof  memory_usage_data->record[i].type);         
+        }
+        memory_usage_data->index = 0;
+        pthread_mutex_unlock(&memory_usage_data->mutex);        
 
-//         pthread_mutex_lock(&trace_record->mutex);
-//         write_to_trace_file_and_clean();
-//         for (int i = 0;i < trace_record->index; i++) {
-//             real_memset(trace_record->record[i].function_stack, 0 , sizeof trace_record->record[i].function_stack);
-//             real_memset(trace_record->record[i].time_buffer,0, sizeof trace_record->record[i].time_buffer);
-//             trace_record->record[i].size = 0;            
-//         } 
-//         trace_record->index = 0;
-//         pthread_mutex_unlock(&trace_record->mutex);
-//         usleep(triger * 1000);
-//     }    
-// }
+#if ENABLE_TRACE
+        pthread_mutex_lock(&trace_record->mutex);
+        DEBUG_TIMER("timer write trace\n", ""); 
+        function_trace_file = fopen(function_trace_file_name.c_str(),"a");
+        
+        DEBUG_TIMER("timer write trace 2\n", ""); 
+        for (int i = 0;i < trace_record->index; i++) {
+            DEBUG_TIMER("timer write trace 3\n", ""); 
+            DEBUG_TIMER("timer write trace 4\n", ""); 
+            // trace_record_t record = trace_record->record[i];            
+            DEBUG_TIMER("i: %d\n", i);
+            if (trace_record->record[i].function_stack == NULL) {
+                DEBUG_TIMER("the i %d function statck is null, skipp\n", i);
+                continue;
+            }
+            DEBUG_TIMER("time: %s\n", trace_record->record[i].time_buffer);
+            // DEBUG_TIMER("trace_record->record[index] address : %p\n", trace_record->record[i]);
+            DEBUG_TIMER("trace_record->record[index].function_stack address : %p\n", trace_record->record[i].function_stack);            
+            try {
+               DEBUG_TIMER("function_stack: %s\n", trace_record->record[i].function_stack);
+            }
+            catch (std::exception& e)
+            {
+                std::cerr << "Exception caught : " << e.what() << std::endl;
+            }            
+            
+            char *t_buff = trace_record->record[i].time_buffer;
+            char *f_buff = trace_record->record[i].function_stack;
+            uint64_t size = trace_record->record[i].size;
+            DEBUG_TIMER("time: %s\n", t_buff);
+            DEBUG_TIMER("trace_record->record[index].function_stack address : %s\n", f_buff);   
+            DEBUG_TIMER("size: %d\n", size);        
+            // os << t_buff << "," << f_buff << "," << size;
+            DEBUG_TIMER("timer write trace 4.5\n", "");
+            //std::string str(os.str());
+            // DEBUG_TIMER("--->add line %s\n",os.str().c_str());
+            fprintf(function_trace_file, "%s,%s,%d\n", t_buff, f_buff, size);
+        }
+        
+        DEBUG_TIMER("timer write trace 5\n", "");
 
-// int start_timer() {
-//     pthread_t tid;
-//     timer_is_activated = true;    
-//     pthread_create(&tid, NULL, time_to_write_file, NULL );    
-//     DEBUG_TIMER("start time with timer_is_activated %d with tid %d\n", timer_is_activated, tid); 
-// }
+        // for (int ii = 0;ii < trace_record->index; ii++) {
+        //     //free(trace_record->record[ii].function_stack);
+        //     real_memset(trace_record->record[ii].function_stack, 0 , sizeof trace_record->record[ii].function_stack);
+        //     real_memset(trace_record->record[ii].time_buffer,0, sizeof trace_record->record[ii].time_buffer);
+        //     trace_record->record[ii].size = 0;            
+        // } 
+        trace_record->index = 0;     
+        fclose(function_trace_file);
+        DEBUG_TIMER("timer write trace 6\n", ""); 
+        pthread_mutex_unlock(&trace_record->mutex);
+        DEBUG_TIMER("timer finish writing trace\n", ""); 
+#endif        
+        usleep(triger * 1000);
+    }    
+}
+
+int start_timer() {
+    pthread_t tid;
+    timer_is_activated = true;    
+    pthread_create(&tid, NULL, time_to_write_file, NULL );    
+    DEBUG_TIMER("start time with timer_is_activated %d with tid %d\n", timer_is_activated, tid); 
+}

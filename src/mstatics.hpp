@@ -78,23 +78,51 @@
 #endif 
 
 #define ENABLE_MALLOC 0
-#define ENABLE_TRACE 1
+#define ENABLE_TRACE 0
+#define MERGE_OUTPUT 1
 
 #define BOOST_BACKTRACE 1
 #define GLIBC_BACKTRACE 0
 
-#define MAX_RECORD_NUM 200
+#define MAX_RECORD_NUM 5
+
+typedef enum data_size {
+    _1_64_,
+    _65_128_,
+    _129_256_,
+    _257_512_,
+    _513_1K_,
+    _1K_2K_,
+    _2K_4K_,
+    _4K_8K_,
+    _8K_16K_,
+    _16K_32K_,
+    _32K_64K_,
+    _128K_256K_,
+    _256K_512K_,
+    _512K_1M_,
+    _1M_2M_,
+    _2M_4M_,
+    GR_4M = 16,
+    invalid_data_size_type = 1000
+}data_size_type;
 
 typedef struct {
   char time_buffer[64];
   char type[64]; //memcpy, memset or memmove
   uint64_t size;
-  float latency; // time in ms
+  float latency; // time in us
 } memmory_usage_record_t;
 
 typedef struct {
+  uint64_t count[GR_4M + 1] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+  uint64_t size[GR_4M + 1] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+  uint64_t latency[GR_4M + 1] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; // time in us
+} memmory_usage_aggre_record_t;
+
+typedef struct {
   char time_buffer[64];
-  char function_stack[1024*2];
+  char function_stack[1024*12];
   uint64_t size;
 } trace_record_t;
 
@@ -120,26 +148,7 @@ typedef struct {
   pthread_mutex_t mutex;
 } timer_status_t;
 
-typedef enum data_size {
-    _1_64_,
-    _65_128_,
-    _129_256_,
-    _257_512_,
-    _513_1K_,
-    _1K_2K_,
-    _2K_4K_,
-    _4K_8K_,
-    _8K_16K_,
-    _16K_32K_,
-    _32K_64K_,
-    _128K_256K_,
-    _256K_512K_,
-    _512K_1M_,
-    _1M_2M_,
-    _2M_4M_,
-    GR_4M = 16,
-    invalid_data_size_type = 1000
-}data_size_type;
+
 
 static std::string memory_usage_file_name;
 static FILE* memory_usage_file = NULL;

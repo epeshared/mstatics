@@ -10,6 +10,10 @@ from os import path
 from io import BytesIO 
 from pandas.plotting import table 
 from scipy import stats
+import datetime
+
+def dateparse (time_in_secs):    
+    return datetime.datetime.fromtimestamp(float(time_in_secs))
 
 def get_count_sum_df(df, memory_func):
     sum_column = df.iloc[:, 1:].sum(axis=0)
@@ -257,8 +261,7 @@ def process_memory_usage_file(pdwriter, inputPath):
     count_df = pd.DataFrame(columns=column_names)    
     count_df["type"] = supported_funcs    
     count_df = count_df.fillna(0)
-    count_df.set_index(["type"], inplace=True)
-    print("generating memory usage report ....")
+    count_df.set_index(["type"], inplace=True)    
     # print(count_df)
 
     latency_df = pd.DataFrame(columns=column_names)    
@@ -266,11 +269,23 @@ def process_memory_usage_file(pdwriter, inputPath):
     latency_df = latency_df.fillna(0) 
     latency_df.set_index(["type"], inplace=True)
 
+    print("read from orignal file")
     memory_usage_df =  pd.read_csv(file, sep=',', error_bad_lines=False)
+
+        # remove outlier data
+    # tmp_df = memory_usage_df.iloc[:, 1:]
+    # tmp_df = tmp_df.mask((tmp_df - tmp_df.mean()).abs() > 2 * tmp_df.std())
+    # is_NaN = tmp_df.isnull()
+    # row_has_NaN = is_NaN.any(axis=1)
+    # true_count = sum(row_has_NaN)
+    # memory_usage_df = memory_usage_df[~numpy.array(row_has_NaN)]
+    # count_df = count_df[~numpy.array(row_has_NaN)]
+
+    # memory_usage_df =  pd.read_csv(file, sep=',', error_bad_lines=False, index_col=0, parse_dates=["time"])
     # latency_df =  pd.read_csv(file, sep=',', error_bad_lines=False)
     # memory_usage_df.to_excel(pdwriter, sheet_name="data")
 
-
+    print("generating memory usage report ....")
     for func in supported_funcs:
         df = memory_usage_df[memory_usage_df['type'] == func]
         # df.to_excel(pdwriter,sheet_name=func)      
@@ -455,13 +470,20 @@ def process_memory_usage_file(pdwriter, inputPath):
             latency = float(ltc_df/(count))
         latency_df.at[func, ">4M"] = latency
     
+    # print("Generating time series report")
+    # memory_usage_df["time"] = pd.to_datetime(memory_usage_df["time"])
+    # # memory_usage_df.set_index("time")
+    # print(memory_usage_df.head())
+    # timeseries_df = memory_usage_df.groupby(pd.Grouper(key='time', freq='1s'))["type"].sum().unstack()
+    # print(timeseries_df.head())
     
-
+    print("Generating memory usage report")
     count_df = count_df.T
     count_df.to_excel(pdwriter, sheet_name="memory_usage_count")
     count_df_row_num = len(count_df)
     #count_df.to_excel(pdwriter, sheet_name="memory_usage_count")
 
+    print("Generating memory latency report")
     latency_df = latency_df.T
     latency_df.to_excel(pdwriter, sheet_name="memory_usage_latency")
 

@@ -475,26 +475,6 @@ void trace_stack(size_t tracing_size) {
 //     return 0;
 // }
 
-int write_to_memory_usage_file_and_clean() {
-    entry_local_func++;
-    DEBUG_FILE("write to file:%s\n", memory_usage_file_name.c_str());
-
-    memory_usage_file = fopen(memory_usage_file_name.c_str(),"a");
-    
-    for (int i = 0;i < memory_usage_data->index; i++) {
-        std::ostringstream os;
-        memmory_usage_record_t record = memory_usage_data->record[i];
-
-        os << record.time_buffer << "," << record.type << "," << record.size << "," << record.latency;
-        std::string str(os.str());
-        //DEBUG_TRACE("add line %s\n",str.c_str());
-        fprintf(memory_usage_file, "%s\n", str.c_str());             
-    } 
-    fclose(memory_usage_file);
-    entry_local_func--;
-    return 0;
-}
-
 /********************** log ******************************/
 static const char *level_strings[] = {
     "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"
@@ -554,6 +534,92 @@ enum data_size check_data_size(size_t size) {
 }
 
 static char function_trace_header[] = "function,1-64,65-128,129-256,257-512,513-1K,1K-2K,2K-4K,4K-8K,8K-16K,16K-32K,32K-64K,128K-256K,256K-512K,512K-1M,1M-2M,2M-4M,>4M";
+
+int write_to_memory_usage_file_and_clean() {
+    entry_local_func++;
+    DEBUG_FILE("write to file:%s\n", memory_usage_file_name.c_str());
+
+    memory_usage_file = fopen(memory_usage_file_name.c_str(),"a");
+    
+    #if MERGE_OUTPUT
+    memmory_usage_aggre_record_t memcpy_aggr_record;
+    memmory_usage_aggre_record_t memmove_aggr_record;
+    memmory_usage_aggre_record_t memset_aggr_record;
+
+    for (int i = 0;i < memory_usage_data->index; i++) {
+        memmory_usage_record_t record = memory_usage_data->record[i];
+        std::string type(record.type);
+
+        data_size ds = check_data_size(record.size);
+        if (type.compare("memcpy") == 0) {
+            memcpy_aggr_record.count[ds] += 1;
+            memcpy_aggr_record.latency[ds] += record.latency;
+            memcpy_aggr_record.size[ds] += record.size;
+        } else if (type.compare("memset") == 0) {
+            memset_aggr_record.count[ds] += 1;
+            memset_aggr_record.latency[ds] += record.latency;
+            memset_aggr_record.size[ds] += record.size;
+        } else if (type.compare("memmove") == 0) {
+            memmove_aggr_record.count[ds] += 1;
+            memmove_aggr_record.latency[ds] += record.latency;
+            memmove_aggr_record.size[ds] += record.size;
+        } else {
+            log_error("can not support type:%s\n", type.c_str());
+            exit(-1);
+        }
+    }
+
+    char* timebuf = memory_usage_data->record[(memory_usage_data->index) - 1].time_buffer; 
+
+    for (int i = 0; i <= GR_4M ; i++ ) {
+        if (memcpy_aggr_record.count[i] != 0) {
+            std::ostringstream os;
+            uint64_t latency = (memcpy_aggr_record.latency[i] / memcpy_aggr_record.count[i]);
+            uint64_t size = (memcpy_aggr_record.size[i] / memcpy_aggr_record.count[i]);
+            os << timebuf << "," << "memcpy" << "," << size << "," << latency;
+            std::string str(os.str());
+            //DEBUG_TRACE("add line %s\n",str.c_str());
+            fprintf(memory_usage_file, "%s\n", str.c_str());               
+        }
+
+        if (memmove_aggr_record.count[i] != 0) {
+            std::ostringstream os;
+            uint64_t latency = (memmove_aggr_record.latency[i] / memmove_aggr_record.count[i]);
+            uint64_t size = (memmove_aggr_record.size[i] / memmove_aggr_record.count[i]);
+            os << timebuf << "," << "memmove" << "," << size << "," << latency;
+            std::string str(os.str());
+            //DEBUG_TRACE("add line %s\n",str.c_str());
+            fprintf(memory_usage_file, "%s\n", str.c_str());   
+        } 
+
+        if (memset_aggr_record.count[i] != 0) {
+            std::ostringstream os;
+            uint64_t latency = (memset_aggr_record.latency[i] / memset_aggr_record.count[i]);
+            uint64_t size = (memset_aggr_record.size[i] / memset_aggr_record.count[i]);
+            os << timebuf << "," << "memset" << "," << size << "," << latency;
+            std::string str(os.str());
+            //DEBUG_TRACE("add line %s\n",str.c_str());
+            fprintf(memory_usage_file, "%s\n", str.c_str());               
+        }                  
+    }
+    #else    
+    for (int i = 0;i < memory_usage_data->index; i++) {
+        std::ostringstream os;
+        memmory_usage_record_t record = memory_usage_data->record[i];
+
+        os << record.time_buffer << "," << record.type << "," << record.size << "," << record.latency;
+        std::string str(os.str());
+        //DEBUG_TRACE("add line %s\n",str.c_str());
+        fprintf(memory_usage_file, "%s\n", str.c_str());             
+    } 
+    #endif
+    fclose(memory_usage_file);
+    entry_local_func--;
+
+    return 0;
+}
+
+
 
 /*************************** memset ******************************************/
 

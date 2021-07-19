@@ -78,7 +78,7 @@
 #endif 
 
 #define ENABLE_MALLOC 0
-#define ENABLE_TRACE 0
+#define ENABLE_TRACE 1
 #define MERGE_OUTPUT 1
 
 #define BOOST_BACKTRACE 1

@@ -12,7 +12,7 @@ mtest:$(TEST_DIR)/test.c
 	#g++ -std=c++17 -lpthread $(TEST_DIR)/test.c -o $(TEST_DIR)/mtest
 
 libmstatics.so: $(SRC)/mstatics.cpp $(SRC)/$(HEADERS)
-	g++ -std=c++11 -fPIC -g -ggdb -O0 -shared -Wl,-z,defs,--as-needed -I/usr/include/ -I./include -I./  $(SRC)/mstatics.cpp -lpthread  -ldl -ldw -L/usr/lib64/libiberty.a  -o $(LIB)/libmstatics.so  -export-dynamic -ldl 
+	g++ -std=c++11 -fPIC -g -ggdb -O0 -shared -Wl,-z,defs,--as-needed -I/usr/include/ -I./include -I./  $(SRC)/mstatics.cpp -lpthread  -ldl -L/usr/lib64/libiberty.a  -o $(LIB)/libmstatics.so  -export-dynamic -ldl 
 
 clean:
 	-rm -f $(LIB)/libmstatics.so

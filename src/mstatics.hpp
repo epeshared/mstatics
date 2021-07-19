@@ -42,7 +42,7 @@
         __LINE__, __func__, __VA_ARGS__); } while (0)      
 #endif 
 
-#define LOG_TIMER 1
+#define LOG_TIMER 0
 #ifdef LOG_TIMER
 #define DEBUG_TIMER(fmt, ...) \
     do { if (LOG_TIMER) fprintf(stderr, "[TIMER][THREAD:%d]  %s:%d:%s(): " fmt, gettid(), __FILE__, \
@@ -184,7 +184,7 @@ static uint64_t malloc_times = 0;
 static uint64_t memset_times = 0;
 static uint64_t memmove_times = 0;
 static uint64_t memcpy_times = 0;
-static uint64_t triger = 100;
+static uint64_t triger = 1000;
 static int finished_init = 0;
 static int file_is_opened = 0;
 static bool timer_is_activated = false;

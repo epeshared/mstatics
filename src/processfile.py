@@ -446,7 +446,8 @@ def process_memory_usage_file(pdwriter, inputPath):
             latency = float(ltc_df/(count))
         latency_df.at[func, ">4M"] = latency
 
-        df = df.groupby(["size","time"]).sum()
+
+        df = df.groupby(["size","time"])["count"].sum()
         df.to_excel(pdwriter,sheet_name=func)
         
     

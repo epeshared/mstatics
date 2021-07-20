@@ -84,7 +84,7 @@
 #define BOOST_BACKTRACE 1
 #define GLIBC_BACKTRACE 0
 
-#define MAX_RECORD_NUM 5000
+#define MAX_RECORD_NUM 20000
 
 typedef enum data_size {
     _1_64_,

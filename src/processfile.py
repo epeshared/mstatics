@@ -674,6 +674,8 @@ if not input_dir:
 report_file=input_dir + "/memmory_usage.xlsx"
 print("The memory usage report file will be located at: " + report_file)
 
+start_time=input("Enter the begining time to process(The timer format be : 2021-07-19-14:39:26): ")
+
 pdwriter = pd.ExcelWriter(report_file, engine='xlsxwriter') # pylint: disable=abstract-class-instantiated
 workbook  = pdwriter.book
 chart_sheet = workbook.add_worksheet("Sheet1")

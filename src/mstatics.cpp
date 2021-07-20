@@ -257,7 +257,7 @@ int initialize() {
     }
     DEBUG_INIT("TIMER_TO_LOG is change to %d\n", triger);
 
-    char memory_usage_header[] = "time,type,size,latency";        
+    char memory_usage_header[] = "time,type,size,count,latency";        
     memory_usage_file_name = out_dir + memory_usage_file_name;
     DEBUG_INIT("memory_usage_file_name: %s\n", memory_usage_file_name.c_str());     
     memory_usage_file = fopen(memory_usage_file_name.c_str(),"w");
@@ -535,7 +535,7 @@ enum data_size check_data_size(size_t size) {
     return ds;
 }
 
-static char function_trace_header[] = "function,1-64,65-128,129-256,257-512,513-1K,1K-2K,2K-4K,4K-8K,8K-16K,16K-32K,32K-64K,128K-256K,256K-512K,512K-1M,1M-2M,2M-4M,>4M";
+// static char function_trace_header[] = "function,1-64,65-128,129-256,257-512,513-1K,1K-2K,2K-4K,4K-8K,8K-16K,16K-32K,32K-64K,128K-256K,256K-512K,512K-1M,1M-2M,2M-4M,>4M";
 
 int write_to_memory_usage_file_and_clean() {
     entry_local_func++;
@@ -576,9 +576,10 @@ int write_to_memory_usage_file_and_clean() {
     for (int i = 0; i <= GR_4M ; i++ ) {
         if (memcpy_aggr_record.count[i] != 0) {
             std::ostringstream os;
-            uint64_t latency = (memcpy_aggr_record.latency[i] / memcpy_aggr_record.count[i]);
-            uint64_t size = (memcpy_aggr_record.size[i] / memcpy_aggr_record.count[i]);
-            os << timebuf << "," << "memcpy" << "," << size << "," << latency;
+            uint64_t count = memcpy_aggr_record.count[i];
+            uint64_t latency = (memcpy_aggr_record.latency[i] / count);
+            uint64_t size = (memcpy_aggr_record.size[i] / count);
+            os << timebuf << "," << "memcpy" << "," << data_size_str[i] << "," << count << ","<< latency;
             std::string str(os.str());
             //DEBUG_TRACE("add line %s\n",str.c_str());
             fprintf(memory_usage_file, "%s\n", str.c_str());               
@@ -586,9 +587,10 @@ int write_to_memory_usage_file_and_clean() {
 
         if (memmove_aggr_record.count[i] != 0) {
             std::ostringstream os;
+            uint64_t count = memmove_aggr_record.count[i];
             uint64_t latency = (memmove_aggr_record.latency[i] / memmove_aggr_record.count[i]);
             uint64_t size = (memmove_aggr_record.size[i] / memmove_aggr_record.count[i]);
-            os << timebuf << "," << "memmove" << "," << size << "," << latency;
+            os << timebuf << "," << "memmove" << "," << data_size_str[i] << "," << count << ","<< latency;
             std::string str(os.str());
             //DEBUG_TRACE("add line %s\n",str.c_str());
             fprintf(memory_usage_file, "%s\n", str.c_str());   
@@ -596,9 +598,10 @@ int write_to_memory_usage_file_and_clean() {
 
         if (memset_aggr_record.count[i] != 0) {
             std::ostringstream os;
+            uint64_t count = memset_aggr_record.count[i];
             uint64_t latency = (memset_aggr_record.latency[i] / memset_aggr_record.count[i]);
             uint64_t size = (memset_aggr_record.size[i] / memset_aggr_record.count[i]);
-            os << timebuf << "," << "memset" << "," << size << "," << latency;
+            os << timebuf << "," << "memset" << "," << data_size_str[i] << ","<< count << ","<< latency;
             std::string str(os.str());
             //DEBUG_TRACE("add line %s\n",str.c_str());
             fprintf(memory_usage_file, "%s\n", str.c_str());               

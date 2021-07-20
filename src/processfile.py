@@ -247,7 +247,7 @@ def process_memory_usage_file(pdwriter, inputPath):
     print("generating memory usage report ....")
     for func in supported_funcs:
         df = memory_usage_df[memory_usage_df['type'] == func]
-        # df.to_excel(pdwriter,sheet_name=func)      
+        df.to_excel(pdwriter,sheet_name=func)      
                 
         rslt_df = df.loc[df["size"] == "1_64"]
         count = rslt_df["count"].sum()

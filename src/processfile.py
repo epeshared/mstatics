@@ -9,7 +9,7 @@ import numpy
 from os import path
 from io import BytesIO 
 from pandas.plotting import table 
-from scipy import stats
+# from scipy import stats
 import datetime
 
 def dateparse (time_in_secs):    

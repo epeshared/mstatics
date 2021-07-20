@@ -279,8 +279,8 @@ def process_memory_usage_file(pdwriter, inputPath):
     row_has_NaN = is_NaN.any(axis=1)
     true_count = sum(row_has_NaN)
     memory_usage_df = memory_usage_df[~numpy.array(row_has_NaN)]
-    count_df = count_df[~numpy.array(row_has_NaN)]
-    latency_df = latency_df[~numpy.array(row_has_NaN)]
+    # count_df = count_df[~numpy.array(row_has_NaN)]
+    # latency_df = latency_df[~numpy.array(row_has_NaN)]
 
     # memory_usage_df =  pd.read_csv(file, sep=',', error_bad_lines=False, index_col=0, parse_dates=["time"])
     # latency_df =  pd.read_csv(file, sep=',', error_bad_lines=False)

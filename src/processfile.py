@@ -247,6 +247,7 @@ def process_memory_usage_file(pdwriter, inputPath):
     print("generating memory usage report ....")
     for func in supported_funcs:
         df = memory_usage_df[memory_usage_df['type'] == func]
+        df = df.groupby(['time','size'])['count'].sum()
         df.to_excel(pdwriter,sheet_name=func)      
                 
         rslt_df = df.loc[df["size"] == "1_64"]
@@ -467,6 +468,18 @@ def process_memory_usage_file(pdwriter, inputPath):
     
     workbook = pdwriter.book
     memory_usage_sheet = workbook.get_worksheet_by_name("memory_usage_count")
+    
+
+    for func in supported_funcs:
+        function_sheet = workbook.get_worksheet_by_name(func)
+        line_chart=workbook.add_chart({'type': 'line'})
+        line_chart.add_series({
+            'name':       '=count',
+            'categories': "=memory_usage_count!$A$2:$A$19",
+            'values':     "=memory_usage_count!$"+cat+"$2:$"+cat+"$19",
+            # 'values':     ["memory_usage_count", 1,1,1,19],
+            'data_labels': {'value': True}
+        })           
 
     cat_list = ["B", "C", "D"]
     index = 0

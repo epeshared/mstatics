@@ -448,8 +448,8 @@ def process_memory_usage_file(pdwriter, inputPath):
 
 
         df = df.groupby(["size","time"])["count"].sum()
-        df = df.pivot(index="size", columns="time", values="count")
-        df = df.fillna(0)
+        df = df.unstack(level=-1)
+        # print(df)
         df.to_excel(pdwriter,sheet_name=func)
         
     
@@ -554,7 +554,7 @@ print("The memory usage report file will be located at: " + report_file)
 
 pdwriter = pd.ExcelWriter(report_file, engine='xlsxwriter') # pylint: disable=abstract-class-instantiated
 workbook  = pdwriter.book
-chart_sheet = workbook.add_worksheet("Sheet1")
+# chart_sheet = workbook.add_worksheet("Sheet1")
 # process_file(pdwriter, input_dir, chart_sheet)
 process_memory_usage_file(pdwriter, input_dir)
 pdwriter.save()

@@ -290,8 +290,9 @@ def process_memory_usage_file(pdwriter, inputPath):
         df = memory_usage_df[memory_usage_df['type'] == func]
         # df.to_excel(pdwriter,sheet_name=func)      
                 
-        rslt_df = df.loc[df["size"].between(1,64)]
-        count =len(rslt_df.index)
+        rslt_df = df.loc[df["size"] == "1_64"]
+        count = rslt_df["count"].sum()
+        # count =len(rslt_df.index)
         count_df.at[func, "1-64"] = count
         ltc_df = rslt_df["latency"].sum()
         if count == 0 :
@@ -300,8 +301,9 @@ def process_memory_usage_file(pdwriter, inputPath):
             latency = float(ltc_df/(count))
         latency_df.at[func, "1-64"] = latency
 
-        rslt_df = df.loc[df["size"].between(65,128)]
-        count =len(rslt_df.index)
+        rslt_df = df.loc[df["size"] == "65_128"]
+        count = rslt_df["count"].sum()
+        # count =len(rslt_df.index)
         count_df.at[func, "65-128"] = count
         ltc_df = rslt_df["latency"].sum()
         if count == 0 :
@@ -310,8 +312,9 @@ def process_memory_usage_file(pdwriter, inputPath):
             latency = float(ltc_df/(count))
         latency_df.at[func, "65-128"] = latency        
 
-        rslt_df = df.loc[df["size"].between(129,256)]
-        count =len(rslt_df.index)
+        rslt_df = df.loc[df["size"] == "129_256"]
+        count = rslt_df["count"].sum()
+        # count =len(rslt_df.index)
         count_df.at[func, "129-256"] = count
         ltc_df = rslt_df["latency"].sum()
         if count == 0 :
@@ -320,8 +323,9 @@ def process_memory_usage_file(pdwriter, inputPath):
             latency = float(ltc_df/(count))
         latency_df.at[func, "129-256"] = latency              
 
-        rslt_df = df.loc[df["size"].between(257,512)]
-        count =len(rslt_df.index)
+        rslt_df = df.loc[df["size"] == "257_512"]
+        count = rslt_df["count"].sum()
+        # count =len(rslt_df.index)
         count_df.at[func, "257-512"] = count
         ltc_df = rslt_df["latency"].sum()
         if count == 0 :
@@ -330,8 +334,9 @@ def process_memory_usage_file(pdwriter, inputPath):
             latency = float(ltc_df/(count))
         latency_df.at[func, "257-512"] = latency      
 
-        rslt_df = df.loc[df["size"].between(513,1*K)]
-        count =len(rslt_df.index)
+        rslt_df = df.loc[df["size"] == "513_1K"]
+        count = rslt_df["count"].sum()
+        # count =len(rslt_df.index)
         count_df.at[func, "513-1K"] = count
         ltc_df = rslt_df["latency"].sum()
         if count == 0 :
@@ -340,8 +345,9 @@ def process_memory_usage_file(pdwriter, inputPath):
             latency = float(ltc_df/(count))
         latency_df.at[func, "513-1K"] = latency      
 
-        rslt_df = df.loc[df["size"].between(1*K + 1, 2*K)]
-        count =len(rslt_df.index)
+        rslt_df = df.loc[df["size"] == "1K_2K"]
+        count = rslt_df["count"].sum()
+        # count =len(rslt_df.index)
         count_df.at[func, "1K-2K"] = count
         ltc_df = rslt_df["latency"].sum()
         if count == 0 :
@@ -350,8 +356,9 @@ def process_memory_usage_file(pdwriter, inputPath):
             latency = float(ltc_df/(count))
         latency_df.at[func, "1K-2K"] = latency      
 
-        rslt_df = df.loc[df["size"].between(2*K + 1, 4*K)]
-        count =len(rslt_df.index)
+        rslt_df = df.loc[df["size"] == "2K _4K"]
+        count = rslt_df["count"].sum()
+        # count =len(rslt_df.index)
         count_df.at[func, "2K-4K"] = count
         ltc_df = rslt_df["latency"].sum()
         if count == 0 :
@@ -360,8 +367,9 @@ def process_memory_usage_file(pdwriter, inputPath):
             latency = float(ltc_df/(count))
         latency_df.at[func, "2K-4K"] = latency      
 
-        rslt_df = df.loc[df["size"].between(4*K + 1, 8*K)]
-        count =len(rslt_df.index)
+        rslt_df = df.loc[df["size"] == "4K_8K"]
+        count = rslt_df["count"].sum()
+        # count =len(rslt_df.index)
         count_df.at[func, "4K-8K"] = count
         ltc_df = rslt_df["latency"].sum()
         if count == 0 :
@@ -370,8 +378,9 @@ def process_memory_usage_file(pdwriter, inputPath):
             latency = float(ltc_df/(count))
         latency_df.at[func, "4K-8K"] = latency      
 
-        rslt_df = df.loc[df["size"].between(8*K + 1,16*K)]
-        count =len(rslt_df.index)
+        rslt_df = df.loc[df["size"] == "8K_16K"]
+        count = rslt_df["count"].sum()
+        # count =len(rslt_df.index)
         count_df.at[func, "8K-16K"] = count
         ltc_df = rslt_df["latency"].sum()
         if count == 0 :
@@ -380,8 +389,9 @@ def process_memory_usage_file(pdwriter, inputPath):
             latency = float(ltc_df/(count))
         latency_df.at[func, "8K-16K"] = latency      
 
-        rslt_df = df.loc[df["size"].between(16*K + 1,32*K)]
-        count =len(rslt_df.index)
+        rslt_df = df.loc[df["size"] == "16K_32K"]
+        count = rslt_df["count"].sum()
+        # count =len(rslt_df.index)
         count_df.at[func, "16K-32K"] = count
         ltc_df = rslt_df["latency"].sum()
         if count == 0 :
@@ -390,8 +400,9 @@ def process_memory_usage_file(pdwriter, inputPath):
             latency = float(ltc_df/(count))
         latency_df.at[func, "16K-32K"] = latency      
 
-        rslt_df = df.loc[df["size"].between(32*K + 1,64*K)]
-        count =len(rslt_df.index)
+        rslt_df = df.loc[df["size"] == "32K_64K"]
+        count = rslt_df["count"].sum()
+        # count =len(rslt_df.index)
         count_df.at[func, "32K-64K"] = count
         ltc_df = rslt_df["latency"].sum()
         if count == 0 :
@@ -400,8 +411,9 @@ def process_memory_usage_file(pdwriter, inputPath):
             latency = float(ltc_df/(count))
         latency_df.at[func, "32K-64K"] = latency      
 
-        rslt_df = df.loc[df["size"].between(64*K + 1,128*K)]
-        count =len(rslt_df.index)
+        rslt_df = df.loc[df["size"] == "64K_128K"]
+        count = rslt_df["count"].sum()
+        # count =len(rslt_df.index)
         count_df.at[func, "64K-128K"] = count
         ltc_df = rslt_df["latency"].sum()
         if count == 0 :
@@ -410,8 +422,9 @@ def process_memory_usage_file(pdwriter, inputPath):
             latency = float(ltc_df/(count))
         latency_df.at[func, "64K-128K"] = latency         
 
-        rslt_df = df.loc[df["size"].between(128*K + 1,256*K)]
-        count =len(rslt_df.index)
+        rslt_df = df.loc[df["size"] == "128K_256K"]
+        count = rslt_df["count"].sum()
+        # count =len(rslt_df.index)
         count_df.at[func, "128K-256K"] = count
         ltc_df = rslt_df["latency"].sum()
         if count == 0 :
@@ -420,8 +433,9 @@ def process_memory_usage_file(pdwriter, inputPath):
             latency = float(ltc_df/(count))
         latency_df.at[func, "128K-256K"] = latency      
 
-        rslt_df = df.loc[df["size"].between(256*K + 1, 512*K)]
-        count =len(rslt_df.index)
+        rslt_df = df.loc[df["size"] == "256K_512K"]
+        count = rslt_df["count"].sum()
+        # count =len(rslt_df.index)
         count_df.at[func, "256K-512K"] = count
         ltc_df = rslt_df["latency"].sum()
         if count == 0 :
@@ -430,8 +444,9 @@ def process_memory_usage_file(pdwriter, inputPath):
             latency = float(ltc_df/(count))
         latency_df.at[func, "256K-512K"] = latency      
 
-        rslt_df = df.loc[df["size"].between(512*K + 1, 1*M)]
-        count =len(rslt_df.index)
+        rslt_df = df.loc[df["size"] == "512K_1M"]
+        count = rslt_df["count"].sum()
+        # count =len(rslt_df.index)
         count_df.at[func, "512K-1M"] = count
         ltc_df = rslt_df["latency"].sum()
         if count == 0 :
@@ -440,8 +455,9 @@ def process_memory_usage_file(pdwriter, inputPath):
             latency = float(ltc_df/(count))
         latency_df.at[func, "512K-1M"] = latency      
 
-        rslt_df = df.loc[df["size"].between(1*M + 1,2*M)]
-        count =len(rslt_df.index)
+        rslt_df = df.loc[df["size"] == "1M_2M"]
+        count = rslt_df["count"].sum()
+        # count =len(rslt_df.index)
         count_df.at[func, "1M-2M"] = count 
         ltc_df = rslt_df["latency"].sum()
         if count == 0 :
@@ -450,8 +466,9 @@ def process_memory_usage_file(pdwriter, inputPath):
             latency = float(ltc_df/(count))
         latency_df.at[func, "1M-2M"] = latency      
 
-        rslt_df = df.loc[df["size"].between(2*M + 1, 4*M)]
-        count =len(rslt_df.index)
+        rslt_df = df.loc[df["size"] == "2M_4M"]
+        count = rslt_df["count"].sum()
+        # count =len(rslt_df.index)
         count_df.at[func, "2M-4M"] = count  
         ltc_df = rslt_df["latency"].sum()
         if count == 0 :
@@ -460,8 +477,9 @@ def process_memory_usage_file(pdwriter, inputPath):
             latency = float(ltc_df/(count))
         latency_df.at[func, "2M-4M"] = latency      
 
-        rslt_df = df.loc[df["size"] > 4*M]
-        count =len(rslt_df.index)
+        rslt_df = df.loc[df["size"]  == ">4M"]
+        count = rslt_df["count"].sum()
+        # count =len(rslt_df.index)
         count_df.at[func, ">4M"] = count                                                                                                                         
         ltc_df = rslt_df["latency"].sum()
         if count == 0 :

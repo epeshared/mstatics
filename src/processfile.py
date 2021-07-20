@@ -448,6 +448,8 @@ def process_memory_usage_file(pdwriter, inputPath):
 
 
         df = df.groupby(["size","time"])["count"].sum()
+        df = df.pivot(index="size", columns="time", values="count")
+        df = df.fillna(0)
         df.to_excel(pdwriter,sheet_name=func)
         
     

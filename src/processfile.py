@@ -246,8 +246,7 @@ def process_memory_usage_file(pdwriter, inputPath):
 
     print("generating memory usage report ....")
     for func in supported_funcs:
-        df = memory_usage_df[memory_usage_df['type'] == func] 
-        df.to_excel(pdwriter,sheet_name=func)     
+        df = memory_usage_df[memory_usage_df['type'] == func]              
                 
         rslt_df = df.loc[df["size"] == "1_64"]
         count = rslt_df["count"].sum()
@@ -446,6 +445,9 @@ def process_memory_usage_file(pdwriter, inputPath):
         else:
             latency = float(ltc_df/(count))
         latency_df.at[func, ">4M"] = latency
+
+        df = df.groupby(["size","time"]).sum()
+        df.to_excel(pdwriter,sheet_name=func)
         
     
     # print("Generating time series report")
@@ -475,7 +477,7 @@ def process_memory_usage_file(pdwriter, inputPath):
     #     line_chart=workbook.add_chart({'type': 'line'})
     #     line_chart.add_series({
     #         'name':       '=count',
-    #         'categories': "=func!$A$2:$A$19",
+    #         'categories': "=" + func +"!$A$2:$A$19",
     #         'values':     "=func!$"+cat+"$2:$"+cat+"$19",
     #         # 'values':     ["func", 1,1,1,19],
     #         'data_labels': {'value': True}

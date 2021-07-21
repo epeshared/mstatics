@@ -504,8 +504,8 @@ def process_memory_usage_file(pdwriter, inputPath):
             })
             index = index + 1
             line_chart.set_x_axis({'date_axis': True, 'num_format': 'hh:mm:ss'}) 
-            line_chart.set_size({'x_scale': 1.8, 'y_scale': 1.5})
-            function_sheet.insert_chart(3+20*(index - 1),col_num + 5, line_chart)
+            line_chart.set_size({'x_scale': 2, 'y_scale': 1.5})
+            function_sheet.insert_chart(3+30*(index - 1),col_num + 5, line_chart)
         
 
     cat_list = ["B", "C", "D"]

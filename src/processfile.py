@@ -487,19 +487,18 @@ def process_memory_usage_file(pdwriter, inputPath):
         function_sheet = workbook.get_worksheet_by_name(func)
 
         row_num = len(df)
-        col_num = len(df. columns) 
-        print("row_num:" + row_num)
-        print("col_num:" + col_num)
-        # for index, row in df.iterrows():
-        #     print("index:"+index)            
-        #     line_chart=workbook.add_chart({'type': 'line'})
-        #     line_chart.add_series({
-        #         'name':       '=' + func + ' count',
-        #         'categories': "=" + func + "!$A$2:$A$" + (row_num-1),
-        #         'values':     "=" + [func], ],
-        #         # 'values':     ["func", 1,1,1,19],
-        #         'data_labels': {'value': True}
-        #     })           
+        col_num = len(df.columns) 
+        print("row_num:" + str(row_num))
+        print("col_num:" + str(col_num))
+        # for column in df:         
+            # line_chart=workbook.add_chart({'type': 'line'})
+            # line_chart.add_series({
+            #     'name':       '=' + func + ' count',
+            #     'categories': "=" + func + "!$A$2:$A$" + (row_num-1),
+            #     'values':     "=" + [func], ],
+            #     # 'values':     ["func", 1,1,1,19],
+            #     'data_labels': {'value': True}
+            # })           
 
     cat_list = ["B", "C", "D"]
     index = 0

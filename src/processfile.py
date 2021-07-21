@@ -485,7 +485,7 @@ def process_memory_usage_file(pdwriter, inputPath):
         df = df.T
         # print(df)
         df.index = pd.to_datetime(df.index, format = '%Y-%m-%d  %H:%M:%S').strftime('%H:%M:%S')
-        df.sort_index()
+        df = df.sort_index()
         df.to_excel(pdwriter,sheet_name=func)        
         function_sheet = workbook.get_worksheet_by_name(func)
 

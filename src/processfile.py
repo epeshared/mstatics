@@ -478,7 +478,8 @@ def process_memory_usage_file(pdwriter, inputPath):
 
     for func in supported_funcs:
         df = memory_usage_df[memory_usage_df['type'] == func]  
-        df = df.groupby(["size",pd.Grouper(freq='s')])["count"].sum()
+        # df = df.groupby(["size",pd.Grouper(freq='s')])["count"].sum()
+        df = df.groupby(["size","time"])["count"].sum()
         df['time'] = df['time'].apply(lambda x: datetime.fromtimestamp(x).strftime('%H:%M:%S'))
         df = df.unstack(level=-1)
         df = df.fillna(0)

@@ -494,14 +494,15 @@ def process_memory_usage_file(pdwriter, inputPath):
         index = 1
         for column in df:                     
             line_chart.add_series({
-                'name':       '=' + func + ' count',
+                # 'name':       '=' + func + ' count',
                 'categories': "=" + func + "!$A$2:$A$" + str(row_num-1),
                 'values':     [func, 1,index,row_num-1,index],
                 'data_labels': {'value': True}
             })
             index = index + 1 
+            function_sheet.insert_chart(3+20*(index - 1),col_num + 5, line_chart)
 
-        function_sheet.insert_chart(3,col_num + 5, line_chart)
+        
 
     cat_list = ["B", "C", "D"]
     index = 0

@@ -228,7 +228,7 @@ def process_memory_usage_file(pdwriter, inputPath):
     latency_df.set_index(["type"], inplace=True)
 
     print("read from orignal file")
-    memory_usage_df =  pd.read_csv(file, sep=',', error_bad_lines=False, index_col=0, parse_dates=["time"])
+    memory_usage_df =  pd.read_csv(file, sep=',', error_bad_lines=False)
 
     # remove outlier data
     tmp_df = memory_usage_df.iloc[:, 1:]

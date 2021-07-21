@@ -481,7 +481,7 @@ def process_memory_usage_file(pdwriter, inputPath):
         df = df.groupby(["size","time"])["count"].sum()
         df = df.unstack(level=-1)
         df = df.fillna(0)
-        # df = df.T
+        df = df.T
         # print(df)
         df.to_excel(pdwriter,sheet_name=func)        
         function_sheet = workbook.get_worksheet_by_name(func)

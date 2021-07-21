@@ -474,7 +474,7 @@ def process_memory_usage_file(pdwriter, inputPath):
     
     workbook = pdwriter.book
     memory_usage_sheet = workbook.get_worksheet_by_name("memory_usage_count")
-    date_format = workbook.add_format({'num_format': 'yyyy-mm-dd hh:mm:ss'})
+    date_format = workbook.add_format({'num_format': 'dd/mm/yyyy hh:mm:ss'})
     
 
     for func in supported_funcs:

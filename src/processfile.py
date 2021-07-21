@@ -228,7 +228,7 @@ def process_memory_usage_file(pdwriter, inputPath):
     latency_df.set_index(["type"], inplace=True)
 
     print("read from orignal file")
-    memory_usage_df =  pd.read_csv(file, sep=',', error_bad_lines=False)
+    memory_usage_df =  pd.read_csv(file, sep=',', error_bad_lines=False, index_col=0, parse_dates=["time"])
 
     # remove outlier data
     tmp_df = memory_usage_df.iloc[:, 1:]
@@ -477,14 +477,14 @@ def process_memory_usage_file(pdwriter, inputPath):
     
 
     for func in supported_funcs:
-        df = memory_usage_df[memory_usage_df['type'] == func]  
-        # df = df.groupby(["size",pd.Grouper(freq='s')])["count"].sum()
-        df = df.groupby(["size","time"])["count"].sum()
-        df['time'] = df['time'].apply(lambda x: datetime.fromtimestamp(x).strftime('%H:%M:%S'))
+        df = memory_usage_df[memory_usage_df['type'] == func]        
+        df = df.groupby(["size",pd.Grouper(freq='s')])["count"].sum()
+        # df['time'] = df['time'].apply(lambda x: datetime.fromtimestamp(x).strftime('%H:%M:%S'))
         df = df.unstack(level=-1)
         df = df.fillna(0)
         df = df.T
         # print(df)
+        df.index = pd.to_datetime(df.index, format = '%H:%M:%S').strftime('%Y-%m-%d  hh:mm:ss')
         df.to_excel(pdwriter,sheet_name=func)        
         function_sheet = workbook.get_worksheet_by_name(func)
 

@@ -483,8 +483,7 @@ def process_memory_usage_file(pdwriter, inputPath):
         df = df.fillna(0)
         df = df.T
         # print(df)
-        df.to_excel(pdwriter,sheet_name=func)
-        line_chart=workbook.add_chart({'type': 'line'})
+        df.to_excel(pdwriter,sheet_name=func)        
         function_sheet = workbook.get_worksheet_by_name(func)
 
         row_num = len(df)
@@ -493,6 +492,7 @@ def process_memory_usage_file(pdwriter, inputPath):
         print("col_num:" + str(col_num))
         index = 1
         for column in df:                     
+            line_chart=workbook.add_chart({'type': 'line'})
             line_chart.add_series({
                 # 'name':       '=' + func + ' count',
                 'categories': "=" + func + "!$A$2:$A$" + str(row_num-1),
@@ -501,7 +501,6 @@ def process_memory_usage_file(pdwriter, inputPath):
             })
             index = index + 1 
             function_sheet.insert_chart(3+20*(index - 1),col_num + 5, line_chart)
-
         
 
     cat_list = ["B", "C", "D"]

@@ -474,7 +474,7 @@ def process_memory_usage_file(pdwriter, inputPath):
     
     workbook = pdwriter.book
     memory_usage_sheet = workbook.get_worksheet_by_name("memory_usage_count")
-    date_format = workbook.add_format({'num_format': 'dd/mm/yyyy hh:mm:ss'})
+    date_format = workbook.add_format({'num_format': 'mm/dd/yyyy  hh:mm:ss AM/PM'})
     
 
     for func in supported_funcs:
@@ -501,7 +501,7 @@ def process_memory_usage_file(pdwriter, inputPath):
                 'data_labels': {'value': True}
             })
             index = index + 1
-            line_chart.set_x_axis({'date_axis': True, 'num_format': 'mm/dd/yyyy  hh:mm:ss AM/PM'}) 
+            line_chart.set_x_axis({'date_axis': True, 'num_format': 'hh:mm:ss AM/PM'}) 
             function_sheet.insert_chart(3+20*(index - 1),col_num + 5, line_chart)
         
 

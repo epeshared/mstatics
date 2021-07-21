@@ -494,7 +494,7 @@ def process_memory_usage_file(pdwriter, inputPath):
         for column in df:                     
             line_chart=workbook.add_chart({'type': 'line'})
             line_chart.add_series({
-                # 'name':       '=' + func + ' count',
+                'name':       [func, 0, index],
                 'categories': "=" + func + "!$A$2:$A$" + str(row_num-1),
                 'values':     [func, 1,index,row_num-1,index],
                 'data_labels': {'value': True}

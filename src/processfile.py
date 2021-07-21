@@ -484,7 +484,7 @@ def process_memory_usage_file(pdwriter, inputPath):
         df = df.fillna(0)
         df = df.T
         # print(df)
-        df.index = pd.to_datetime(df.index, format = '%H:%M:%S').strftime('%Y-%m-%d  hh:mm:ss')
+        df.index = pd.to_datetime(df.index, format = '%H:%M:%S').strftime('%Y-%m-%d %H:%M:%S')
         df.to_excel(pdwriter,sheet_name=func)        
         function_sheet = workbook.get_worksheet_by_name(func)
 
@@ -499,7 +499,7 @@ def process_memory_usage_file(pdwriter, inputPath):
                 'name':       [func, 0, index],
                 'categories': "=" + func + "!$A$2:$A$" + str(row_num-1),
                 'values':     [func, 1,index,row_num-1,index],
-                'data_labels': {'value': True}
+                # 'data_labels': {'value': True}
             })
             index = index + 1
             line_chart.set_x_axis({'date_axis': True, 'num_format': 'hh:mm:ss'}) 

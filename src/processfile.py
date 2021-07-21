@@ -447,11 +447,11 @@ def process_memory_usage_file(pdwriter, inputPath):
         latency_df.at[func, ">4M"] = latency
 
 
-        df = df.groupby(["size","time"])["count"].sum()
-        df = df.unstack(level=-1)
-        df = df.fillna(0)
-        # print(df)
-        df.to_excel(pdwriter,sheet_name=func)
+        # df = df.groupby(["size","time"])["count"].sum()
+        # df = df.unstack(level=-1)
+        # df = df.fillna(0)
+        # # print(df)
+        # df.to_excel(pdwriter,sheet_name=func)
         
     
     # print("Generating time series report")
@@ -476,16 +476,30 @@ def process_memory_usage_file(pdwriter, inputPath):
     memory_usage_sheet = workbook.get_worksheet_by_name("memory_usage_count")
     
 
-    # for func in supported_funcs:
-    #     function_sheet = workbook.get_worksheet_by_name(func)
-    #     line_chart=workbook.add_chart({'type': 'line'})
-    #     line_chart.add_series({
-    #         'name':       '=count',
-    #         'categories': "=" + func +"!$A$2:$A$19",
-    #         'values':     "=func!$"+cat+"$2:$"+cat+"$19",
-    #         # 'values':     ["func", 1,1,1,19],
-    #         'data_labels': {'value': True}
-    #     })           
+    for func in supported_funcs:
+        df = memory_usage_df[memory_usage_df['type'] == func]  
+        df = df.groupby(["size","time"])["count"].sum()
+        df = df.unstack(level=-1)
+        df = df.fillna(0)
+        df = df.T
+        # print(df)
+        df.to_excel(pdwriter,sheet_name=func)
+        function_sheet = workbook.get_worksheet_by_name(func)
+
+        row_num = len(df)
+        col_num = len(df. columns) 
+        print("row_num:" + row_num)
+        print("col_num:" + col_num)
+        # for index, row in df.iterrows():
+        #     print("index:"+index)            
+        #     line_chart=workbook.add_chart({'type': 'line'})
+        #     line_chart.add_series({
+        #         'name':       '=' + func + ' count',
+        #         'categories': "=" + func + "!$A$2:$A$" + (row_num-1),
+        #         'values':     "=" + [func], ],
+        #         # 'values':     ["func", 1,1,1,19],
+        #         'data_labels': {'value': True}
+        #     })           
 
     cat_list = ["B", "C", "D"]
     index = 0

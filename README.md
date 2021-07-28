@@ -27,8 +27,9 @@ Also the tool is able to report the memory function trace stack:
 * ./processfile.py
 
 ## Eviroment variable and Configuration
-* MSTATICS_OUT_DIR: this variable is used to specify the directory for the report to generate.
-* THe function trace feature can be turn on or turn off by "ENABLE_TRACE" definition in mstatics.hpp
+* MSTATICS_OUT_DIR: this eviroment variable is used to specify the directory for the report to generate. (eg. export MSTATICS_OUT_DIR=./)
+* TIMER_TO_LOG: the eviroment variable is used to specify how ofern to flush recorded data to file, the unit is ms. (eg. export TIMER_TO_LOG=1000, means the interval to flush data to file is 1 second)
+* The function trace feature can be turn on or turn off by "ENABLE_TRACE" definition in mstatics.hpp
 
 ## Known Issue
 * If function trace feature is turn on and run the mstatics for MySQL, The startup is very slow due to "dladdr" for trace is the bottelneck

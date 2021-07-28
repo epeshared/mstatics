@@ -32,5 +32,5 @@ Also the tool is able to report the memory function trace stack:
 * The function trace feature can be turn on or turn off by "ENABLE_TRACE" definition in mstatics.hpp
 
 ## Known Issue
-* If function trace feature is turn on and run the mstatics for MySQL, The startup is very slow due to "dladdr" for trace is the bottelneck
+* If function trace feature is turn on and run the mstatics for some Database, it could be very slow due to "dladdr" for trace is the bottelneck
 

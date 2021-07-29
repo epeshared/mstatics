@@ -47,35 +47,35 @@
         __LINE__, __func__, __VA_ARGS__); } while (0)      
 #endif 
 
-#define LOG_TIMER 1
+#define LOG_TIMER 0
 #ifdef LOG_TIMER
 #define DEBUG_TIMER(fmt, ...) \
     do { if (LOG_TIMER) fprintf(stderr, "[TIMER][THREAD:%d]  %s:%d:%s(): " fmt, gettid(), __FILE__, \
         __LINE__, __func__, __VA_ARGS__); } while (0)      
 #endif 
 
-#define LOG_TRACE 1
+#define LOG_TRACE 0
 #ifdef LOG_TRACE
 #define DEBUG_TRACE(fmt, ...) \
     do { if (LOG_TRACE) fprintf(stderr, "[TRACE][THREAD:%d]  %s:%d:%s(): " fmt, gettid(), __FILE__, \
         __LINE__, __func__, __VA_ARGS__); } while (0)      
 #endif 
 
-#define LOG_MEMSET 1
+#define LOG_MEMSET 0
 #ifdef LOG_MEMSET
 #define DEBUG_MEMSET(fmt, ...) \
     do { if (LOG_MEMSET) fprintf(stderr, "[MEMSET][THREAD:%d]  %s:%d:%s(): " fmt, gettid(), __FILE__, \
         __LINE__, __func__, __VA_ARGS__); } while (0)      
 #endif
 
-#define LOG_MEMMOVE 1
+#define LOG_MEMMOVE 0
 #ifdef LOG_MEMMOVE
 #define DEBUG_MEMMOVE(fmt, ...) \
     do { if (LOG_MEMMOVE) fprintf(stderr, "[MEMMOVE][THREAD:%d]  %s:%d:%s(): " fmt, gettid(), __FILE__, \
         __LINE__, __func__, __VA_ARGS__); } while (0)      
 #endif 
 
-#define LOG_MEMCPY 1
+#define LOG_MEMCPY 0
 #ifdef LOG_MEMCPY
 #define DEBUG_MEMCPY(fmt, ...) \
     do { if (LOG_MEMCPY) fprintf(stderr, "[LOG_MEMCPY][THREAD:%d]  %s:%d:%s(): " fmt, gettid(), __FILE__, \

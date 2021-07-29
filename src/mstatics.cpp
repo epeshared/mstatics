@@ -366,7 +366,13 @@ bool is_able_to_trace(size_t tracing_size) {
                 }                
             }            
         }
+    }
+
+
+    for (int i = 0; i < 17; i++) {
+        DEBUG_TRACE("%d,",trace_record->enabled_ts[i]);
     }   
+    DEBUG_TRACE("\n", "");
 
     entry_local_func--;
 

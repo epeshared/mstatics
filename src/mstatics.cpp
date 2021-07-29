@@ -377,11 +377,14 @@ void trace_stack(size_t tracing_size) {
     entry_local_func++;
     pthread_mutex_lock(&trace_record->mutex);
     DEBUG_TRACE("---------------------------------------------------------\n", "");
+    DEBUG_TRACE("tracing size: %d\n", tracing_size);
 
     if (!is_able_to_trace(tracing_size)) {
         pthread_mutex_unlock(&trace_record->mutex);
         return;
     }
+
+    DEBUG_TRACE("tracing size: %d is able to be traced\n", tracing_size);
 
     std::string call_statck="";
     #if BOOST_BACKTRACE        

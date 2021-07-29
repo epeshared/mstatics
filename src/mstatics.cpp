@@ -300,6 +300,7 @@ int initialize() {
 /********************** stack trace **********************/
 
 bool is_turn_on_trace() {
+    entry_local_func++;
     const char* env_p = std::getenv(BEGINE_TO_TRACE);
     if (env_p == NULL) {
          DEBUG_TRACE("%s is NULL \n", BEGINE_TO_TRACE);
@@ -318,16 +319,15 @@ bool is_turn_on_trace() {
          }          
         return false; 
     }
-
+    entry_local_func--;
     return true;
 }
 
 bool is_able_to_trace(size_t tracing_size) {
-
+    entry_local_func++;
     if (!is_turn_on_trace()) {
         return false;
     }
-
 
     if (trace_record->begin_trace == false) {
         trace_record->begin_trace = true;
@@ -367,6 +367,8 @@ bool is_able_to_trace(size_t tracing_size) {
             }            
         }
     }   
+
+    entry_local_func--;
 
     return trace_record->enabled_ts[check_data_size(tracing_size)];
 }

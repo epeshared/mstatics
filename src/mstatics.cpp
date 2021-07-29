@@ -984,8 +984,8 @@ void* time_to_write_file(void *param) {
             
             DEBUG_TIMER("timer write trace 2\n", ""); 
             for (int i = 0;i < trace_record->index; i++) {
-                DEBUG_TIMER("timer write trace 3\n", ""); 
-                DEBUG_TIMER("timer write trace 4\n", ""); 
+                // DEBUG_TIMER("timer write trace 3\n", ""); 
+                // DEBUG_TIMER("timer write trace 4\n", ""); 
                 // trace_record_t record = trace_record->record[i];            
                 DEBUG_TIMER("i: %d\n", i);
                 if (trace_record->record[i].function_stack == NULL) {
@@ -1016,7 +1016,7 @@ void* time_to_write_file(void *param) {
                 fprintf(function_trace_file, "%s,%s,%d\n", t_buff, f_buff, size);
             }
             
-            DEBUG_TIMER("timer write trace 5\n", "");
+            // DEBUG_TIMER("timer write trace 5\n", "");
 
             // for (int ii = 0;ii < trace_record->index; ii++) {
             //     //free(trace_record->record[ii].function_stack);
@@ -1026,11 +1026,12 @@ void* time_to_write_file(void *param) {
             // } 
             trace_record->index = 0;     
             fclose(function_trace_file);
-            DEBUG_TIMER("timer write trace 6\n", ""); 
+            // DEBUG_TIMER("timer write trace 6\n", ""); 
             // pthread_mutex_unlock(&trace_record->mutex);
-            DEBUG_TIMER("timer finish writing trace\n", ""); 
+            
         }
         pthread_mutex_unlock(&trace_record->mutex);
+        DEBUG_TIMER("timer finish writing trace\n", ""); 
 
 #endif        
         usleep(triger * 1000);

@@ -16,6 +16,7 @@
 #include <errno.h>
 #include <execinfo.h>
 #include <threads.h>
+#include <vector>
 
 #include <mutex>
 #include <thread>
@@ -134,6 +135,10 @@ int initialise_trace_data() {
     
 
     trace_record->index = 0;
+    trace_record->begin_trace = false;
+    for (int i = 0 ; i < GR_4M + 1; i++) {
+        trace_record->enabled_ts[i] = 1;
+    }
 
     // initialise mutex so it works properly in shared memory
     pthread_mutexattr_t attr;
@@ -294,10 +299,72 @@ int initialize() {
 
 /********************** stack trace **********************/
 
+bool is_able_to_trace(size_t tracing_size) {
+    const char* env_p = std::getenv(BEGINE_TO_TRACE);
+    if (env_p == NULL) {
+         DEBUG_TRACE("%s is NULL \n", BEGINE_TO_TRACE);
+         if (trace_record->begin_trace == true) {
+             trace_record->begin_trace = false;
+            log_info("Turn off tracing\n", "");   
+         }         
+         return false; 
+    }
+
+    if ((env_p[0] == '\0')) {
+        DEBUG_TRACE("%s is empty\n", BEGINE_TO_TRACE);
+         if (trace_record->begin_trace == true) {
+            trace_record->begin_trace = false;
+            log_info("Turn off tracing\n", "");   
+         }          
+        return false; 
+    }
+
+    if (trace_record->begin_trace == false) {
+        trace_record->begin_trace = true;
+        log_info("Turn on tracing\n", "");   
+    }      
+    
+    const char* env_ts = std::getenv(TRACING_SIZE);
+    if (env_ts != NULL && (env_ts[0] != '\0')) {
+        DEBUG_TRACE("%s is NULL \n", env_ts);
+        std::vector<int> vect; 
+
+        std::stringstream ss(env_ts);
+
+        for (int i; ss >> i;) {
+            vect.push_back(i);    
+            if (ss.peek() == ',' || ss.peek() == ' ')
+                ss.ignore();
+        }
+
+        for (std::size_t i = 0; i < vect.size(); i++) {
+            if (vect[i] != 1 || vect[i] != 0) {
+                log_error("%s array %s value must be either 0 or 1", TRACING_SIZE, env_ts);
+                exit(-1);
+            }
+            if (trace_record->enabled_ts[i] != vect[i]) {
+                trace_record->enabled_ts[i] = vect[i];
+                if (trace_record->enabled_ts[i] == 1) {
+                    log_info("enabled to trace %s\n", data_size_str[i]);
+                } else if (trace_record->enabled_ts[i] == 0) {
+                    log_info("disable to trace %s\n", data_size_str[i]);
+                }                
+            }            
+        }
+    }   
+
+    return trace_record->enabled_ts[check_data_size(tracing_size)];
+}
+
 void trace_stack(size_t tracing_size) {
     entry_local_func++;
     pthread_mutex_lock(&trace_record->mutex);
     DEBUG_TRACE("---------------------------------------------------------\n", "");
+
+    if (!is_able_to_trace(tracing_size)) {
+        return;
+    }
+
     std::string call_statck="";
     #if BOOST_BACKTRACE        
         std::stringstream ss;
@@ -480,14 +547,6 @@ void trace_stack(size_t tracing_size) {
 /********************** log ******************************/
 static const char *level_strings[] = {
     "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"
-};
-
-
-static const char *data_size_str[] = {
-    "1_64", "65_128", "129_256", "257_512",
-    "513_1K", "1K_2K", "2K_4K","4K_8K", "8K_16K",
-    "16K_32K", "32K_64K", "128K_256K", "256K_512K",
-    "512K_1M", "1M_2M", "2M_4M", ">4M"
 };
 
 
@@ -892,6 +951,26 @@ void* time_to_write_file(void *param) {
 
 #if ENABLE_TRACE
         pthread_mutex_lock(&trace_record->mutex);
+
+        const char* env_p = std::getenv(BEGINE_TO_TRACE);
+        if (env_p == NULL) {
+            DEBUG_TIMER("%s is NULL \n", BEGINE_TO_TRACE);
+            if (trace_record->begin_trace == true) {
+                trace_record->begin_trace = false;
+                log_info("Turn off tracing\n", "");   
+            }         
+            continue; 
+        }
+
+        if ((env_p[0] == '\0')) {
+            DEBUG_TIMER("%s is empty\n", BEGINE_TO_TRACE);
+            if (trace_record->begin_trace == true) {
+                trace_record->begin_trace = false;
+                log_info("Turn off tracing\n", "");   
+            }          
+            continue; 
+        }
+
         DEBUG_TIMER("timer write trace\n", ""); 
         function_trace_file = fopen(function_trace_file_name.c_str(),"a");
         

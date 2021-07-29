@@ -12,8 +12,13 @@
 #define gettid() syscall(SYS_gettid)
 #endif
 
+
+#define log_info(fmt, ...) \
+    do {fprintf(stderr, "[THREAD:%d INFO] %s:%d:%s(): " fmt, gettid(), __FILE__, \
+        __LINE__, __func__, __VA_ARGS__); } while (0)
+
 #define log_error(fmt, ...) \
-    do { if (DEBUG) fprintf(stderr, "[THREAD:%d ERROR] %s:%d:%s(): " fmt, gettid(), __FILE__, \
+    do {fprintf(stderr, "[THREAD:%d ERROR] %s:%d:%s(): " fmt, gettid(), __FILE__, \
         __LINE__, __func__, __VA_ARGS__); } while (0)
 
 #define DEBUG 0
@@ -86,6 +91,13 @@
 
 #define MAX_RECORD_NUM 20000
 
+static const char *data_size_str[] = {
+    "1_64", "65_128", "129_256", "257_512",
+    "513_1K", "1K_2K", "2K_4K","4K_8K", "8K_16K",
+    "16K_32K", "32K_64K", "128K_256K", "256K_512K",
+    "512K_1M", "1M_2M", "2M_4M", ">4M"
+};
+
 typedef enum data_size {
     _1_64_,
     _65_128_,
@@ -135,6 +147,8 @@ typedef struct {
 typedef struct {
   trace_record_t record[MAX_RECORD_NUM];
   size_t index;
+  bool begin_trace;
+  int enabled_ts[17];
   pthread_mutex_t mutex;
 } trace_data_t;
 
@@ -192,6 +206,13 @@ thread_local int entry_local_func = 0;
 
 static const char* MSTATICS_OUT_DIR = "MSTATICS_OUT_DIR";
 static const char* TIMER_TO_LOG = "TIMER_TO_LOG";
+static const char* BEGINE_TO_TRACE = "BEGINE_TO_TRACE";
+
+// The tracing size vriable should be an array to indicate which size sould be traced, 
+// the array is 0-1 value for {"1_64", "65_128", "129_256", "257_512", "513_1K", "1K_2K", "2K_4K","4K_8K", "8K_16K", "16K_32K", "32K_64K", "128K_256K", "256K_512K", "512K_1M", "1M_2M", "2M_4M", ">4M"}
+//eg. 
+// "1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1" indicate _1_64_ and >4M size should be traced
+static const char* TRACING_SIZE = "TRACING_SIZE";
 
 static memory_usage_t* memory_usage_data = NULL;
 static int _ignore_shared = initialise_shared();

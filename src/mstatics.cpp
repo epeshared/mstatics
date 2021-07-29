@@ -341,14 +341,18 @@ bool is_able_to_trace(size_t tracing_size) {
 
         std::stringstream ss(env_ts);
 
+        // log_info("------------------------------\n", "");
         for (int i; ss >> i;) {
+            // log_info("push back %d\n", i);
             vect.push_back(i);    
             if (ss.peek() == ',' || ss.peek() == ' ')
                 ss.ignore();
         }
+        // log_info("vec size %d\n", vect.size());
+        // log_info("------------------------------\n", "");
 
         for (std::size_t i = 0; i < vect.size(); i++) {
-            DEBUG_TRACE("%d in TRACING_SIZE is %d\n", i, vect[i]);
+            // log_info("%d in TRACING_SIZE is %d\n", i, vect[i]);
             if (vect[i] != 1 && vect[i] != 0) {
                 log_error("%s array %s value must be either 0 or 1\n", TRACING_SIZE, env_ts);
                 exit(-1);
@@ -356,9 +360,9 @@ bool is_able_to_trace(size_t tracing_size) {
             if (trace_record->enabled_ts[i] != vect[i]) {
                 trace_record->enabled_ts[i] = vect[i];
                 if (trace_record->enabled_ts[i] == 1) {
-                    log_info("enabled to trace %s\n", data_size_str[i]);
+                    log_info("%d enabled to trace %s\n", i, data_size_str[i]);
                 } else if (trace_record->enabled_ts[i] == 0) {
-                    log_info("disable to trace %s\n", data_size_str[i]);
+                    log_info("%d disable to trace %s\n", i, data_size_str[i]);
                 }                
             }            
         }

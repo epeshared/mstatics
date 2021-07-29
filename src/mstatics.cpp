@@ -615,7 +615,7 @@ enum data_size check_data_size(size_t size) {
     } else if (size > 4 * 1024 * 1024) {
         ds = GR_4M;
     } else {
-        ds = GR_4M;
+        // ds = GR_4M;
     }
     return ds;
 }

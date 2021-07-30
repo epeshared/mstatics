@@ -292,7 +292,10 @@ int initialize() {
 
     pthread_mutex_unlock(&init_data->mutex);
 
+    DEBUG_INIT("pid %s finished started time\n", pid.c_str());    
+
     entry_local_func--;
+    sleep(3);
     return 0;
 }
 
@@ -787,6 +790,7 @@ void *memset(void *str, int c, size_t size) {
     DEBUG_MEMSET("index %d\n",memory_usage_data->index);
 
     if (memory_usage_data->index >= MAX_RECORD_NUM) {
+        DEBUG_FILE("memory_usage_data->index >= MAX_RECORD_NUM, writing to file\n","");
         write_to_memory_usage_file_and_clean();
         for (int i = 0;i < memory_usage_data->index; i++) {
             //memmory_usage_record_t record = memory_usage_data->record[i];
@@ -864,6 +868,7 @@ void *memmove(void *str1, const void *str2, size_t size) {
     DEBUG_MEMMOVE("index %d\n",memory_usage_data->index);
 
     if (memory_usage_data->index >= MAX_RECORD_NUM) {
+        DEBUG_FILE("memory_usage_data->index >= MAX_RECORD_NUM, writing to file\n","");
         write_to_memory_usage_file_and_clean();
         for (int i = 0;i < memory_usage_data->index; i++) {
             //memmory_usage_record_t record = memory_usage_data->record[i];
@@ -949,6 +954,7 @@ void *memcpy(void *str1, const void *str2, size_t size) {
     DEBUG_MEMCPY("index %d\n",memory_usage_data->index);
 
     if (memory_usage_data->index >= MAX_RECORD_NUM) {
+        DEBUG_FILE("memory_usage_data->index >= MAX_RECORD_NUM, writing to file\n","");
         write_to_memory_usage_file_and_clean();
         for (int i = 0;i < memory_usage_data->index; i++) {
             //memmory_usage_record_t record = memory_usage_data->record[i];

@@ -121,9 +121,9 @@ typedef struct {
 } memmory_usage_record_t;
 
 typedef struct {
-  uint64_t count[GR_4M + 1] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-  uint64_t size[GR_4M + 1] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-  uint64_t latency[GR_4M + 1] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; // time in us
+  uint64_t count[GR_4M + 1] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+  uint64_t size[GR_4M + 1] =  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+  uint64_t latency[GR_4M + 1] =  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};// time in us
 } memmory_usage_aggre_record_t;
 
 typedef struct {

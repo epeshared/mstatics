@@ -221,4 +221,12 @@ static int _ignore_init = initialise_init_data();
 
 static int _ignore = initialize();
 
+typedef enum mem_func_type {
+  memory_copy,
+  memory_set,
+  memory_move
+};
+
+void trace_stack(mem_func_type mem_func,size_t tracing_size);
+
 #endif

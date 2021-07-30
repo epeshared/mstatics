@@ -294,11 +294,14 @@ int initialize() {
 
 /********************** stack trace **********************/
 
-void trace_stack(size_t tracing_size) {
+void trace_stack(mem_func_type mem_func, size_t tracing_size) {
     entry_local_func++;
     pthread_mutex_lock(&trace_record->mutex);
     DEBUG_TRACE("---------------------------------------------------------\n", "");
 
+    if (!(mem_func == memory_copy && tracing_size >= 4*1024*1024)) {
+        return;
+    }
 
     std::string call_statck="";
     #if BOOST_BACKTRACE        

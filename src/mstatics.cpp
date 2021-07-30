@@ -657,7 +657,7 @@ void *memset(void *str, int c, size_t size) {
     DEBUG_MEMSET("memset(%d)\n", size); 
           
     #if ENABLE_TRACE
-    if (size >= 4*1024) {
+    if (size >= 4*1024*1024) {
         trace_stack(size);
     }
     #endif
@@ -735,7 +735,7 @@ void *memmove(void *str1, const void *str2, size_t size) {
     DEBUG_MEMMOVE("memmove(%d)\n", size);  
         
     #if ENABLE_TRACE
-    if (size >= 4*1024) {
+    if (size >= 4*1024*1024) {
         trace_stack(size);
     }
     #endif
@@ -823,7 +823,7 @@ void *memcpy(void *str1, const void *str2, size_t size) {
     } 
     
     #if ENABLE_TRACE
-    if (size >= 4*1024) {
+    if (size >= 4*1024*1024) {
         trace_stack(size);
     }    
     #endif

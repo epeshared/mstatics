@@ -303,6 +303,10 @@ void trace_stack(mem_func_type mem_func, size_t tracing_size) {
         return;
     }
 
+    if (tracing_size < 4*1024*1024) {
+        return;
+    }
+
     std::string call_statck="";
     #if BOOST_BACKTRACE        
         std::stringstream ss;

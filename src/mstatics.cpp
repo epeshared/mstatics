@@ -711,6 +711,7 @@ int write_to_memory_usage_file_and_clean() {
     } 
     #endif
     fclose(memory_usage_file);
+    DEBUG_FILE("finished writing to file:%s\n", memory_usage_file_name.c_str());
     entry_local_func--;
 
     return 0;
@@ -1039,9 +1040,9 @@ void* time_to_write_file(void *param) {
         fclose(function_trace_file);
         // DEBUG_TIMER("timer write trace 6\n", ""); 
         // pthread_mutex_unlock(&trace_record->mutex);
-
-        pthread_mutex_unlock(&trace_record->mutex);
         DEBUG_TIMER("timer finish writing trace\n", ""); 
+        pthread_mutex_unlock(&trace_record->mutex);
+        
 
 #endif        
         usleep(triger * 1000);

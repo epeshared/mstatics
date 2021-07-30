@@ -147,8 +147,8 @@ typedef struct {
 typedef struct {
   trace_record_t record[MAX_RECORD_NUM];
   size_t index;
-  bool begin_trace;
-  int enabled_ts[17];
+  // bool begin_trace;
+  // int enabled_ts[17];
   pthread_mutex_t mutex;
 } trace_data_t;
 
@@ -227,5 +227,13 @@ static int _ignore_init = initialise_init_data();
 // static int _ignore_timer = initialise_timer();
 
 static int _ignore = initialize();
+
+typedef enum mem_func_type {
+  memcpy_func,
+  memset_func,
+  memmove_func
+} mem_func;
+
+void trace_stack(mem_func_type func, size_t tracing_size);
 
 #endif

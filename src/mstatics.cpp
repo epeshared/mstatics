@@ -135,10 +135,10 @@ int initialise_trace_data() {
     
 
     trace_record->index = 0;
-    trace_record->begin_trace = false;
-    for (int i = 0 ; i < GR_4M + 1; i++) {
-        trace_record->enabled_ts[i] = 1;
-    }
+    // trace_record->begin_trace = false;
+    // for (int i = 0 ; i < GR_4M + 1; i++) {
+    //     trace_record->enabled_ts[i] = 1;
+    // }
 
     // initialise mutex so it works properly in shared memory
     pthread_mutexattr_t attr;
@@ -299,92 +299,98 @@ int initialize() {
 
 /********************** stack trace **********************/
 
-bool is_turn_on_trace() {
-    entry_local_func++;
-    const char* env_p = std::getenv(BEGINE_TO_TRACE);
-    if (env_p == NULL) {
-         DEBUG_TRACE("%s is NULL \n", BEGINE_TO_TRACE);
-         if (trace_record->begin_trace == true) {
-             trace_record->begin_trace = false;
-            log_info("Turn off tracing\n", "");   
-         }         
-         return false; 
-    }
+// bool is_turn_on_trace() {
+//     entry_local_func++;
+//     const char* env_p = std::getenv(BEGINE_TO_TRACE);
+//     if (env_p == NULL) {
+//          DEBUG_TRACE("%s is NULL \n", BEGINE_TO_TRACE);
+//          if (trace_record->begin_trace == true) {
+//              trace_record->begin_trace = false;
+//             log_info("Turn off tracing\n", "");   
+//          }         
+//          return false; 
+//     }
 
-    if ((env_p[0] == '\0')) {
-        DEBUG_TRACE("%s is empty\n", BEGINE_TO_TRACE);
-         if (trace_record->begin_trace == true) {
-            trace_record->begin_trace = false;
-            log_info("Turn off tracing\n", "");   
-         }          
-        return false; 
-    }
-    entry_local_func--;
-    return true;
-}
+//     if ((env_p[0] == '\0')) {
+//         DEBUG_TRACE("%s is empty\n", BEGINE_TO_TRACE);
+//          if (trace_record->begin_trace == true) {
+//             trace_record->begin_trace = false;
+//             log_info("Turn off tracing\n", "");   
+//          }          
+//         return false; 
+//     }
+//     entry_local_func--;
+//     return true;
+// }
 
-bool is_able_to_trace(size_t tracing_size) {
-    entry_local_func++;
-    if (!is_turn_on_trace()) {
-        return false;
-    }
+bool is_able_to_trace(mem_func_type func, size_t tracing_size) {
+    // entry_local_func++;
+    // if (!is_turn_on_trace()) {
+    //     return false;
+    // }
 
-    if (trace_record->begin_trace == false) {
-        trace_record->begin_trace = true;
-        log_info("Turn on tracing\n", "");   
-    }      
+    // if (trace_record->begin_trace == false) {
+    //     trace_record->begin_trace = true;
+    //     log_info("Turn on tracing\n", "");   
+    // }      
     
-    const char* env_ts = std::getenv(TRACING_SIZE);
-    if (env_ts != NULL && (env_ts[0] != '\0')) {
-        DEBUG_TRACE("%s is %s\n", TRACING_SIZE, env_ts);
-        std::vector<int> vect; 
+    // const char* env_ts = std::getenv(TRACING_SIZE);
+    // if (env_ts != NULL && (env_ts[0] != '\0')) {
+    //     DEBUG_TRACE("%s is %s\n", TRACING_SIZE, env_ts);
+    //     std::vector<int> vect; 
 
-        std::stringstream ss(env_ts);
+    //     std::stringstream ss(env_ts);
 
-        // log_info("------------------------------\n", "");
-        for (int i; ss >> i;) {
-            // log_info("push back %d\n", i);
-            vect.push_back(i);    
-            if (ss.peek() == ',' || ss.peek() == ' ')
-                ss.ignore();
-        }
-        // log_info("vec size %d\n", vect.size());
-        // log_info("------------------------------\n", "");
+    //     // log_info("------------------------------\n", "");
+    //     for (int i; ss >> i;) {
+    //         // log_info("push back %d\n", i);
+    //         vect.push_back(i);    
+    //         if (ss.peek() == ',' || ss.peek() == ' ')
+    //             ss.ignore();
+    //     }
+    //     // log_info("vec size %d\n", vect.size());
+    //     // log_info("------------------------------\n", "");
 
-        for (std::size_t i = 0; i < vect.size(); i++) {
-            // log_info("%d in TRACING_SIZE is %d\n", i, vect[i]);
-            if (vect[i] != 1 && vect[i] != 0) {
-                log_error("%s array %s value must be either 0 or 1\n", TRACING_SIZE, env_ts);
-                exit(-1);
-            }
-            if (trace_record->enabled_ts[i] != vect[i]) {
-                trace_record->enabled_ts[i] = vect[i];
-                if (trace_record->enabled_ts[i] == 1) {
-                    log_info("%d enabled to trace %s\n", i, data_size_str[i]);
-                } else if (trace_record->enabled_ts[i] == 0) {
-                    log_info("%d disable to trace %s\n", i, data_size_str[i]);
-                }                
-            }            
-        }
+    //     for (std::size_t i = 0; i < vect.size(); i++) {
+    //         // log_info("%d in TRACING_SIZE is %d\n", i, vect[i]);
+    //         if (vect[i] != 1 && vect[i] != 0) {
+    //             log_error("%s array %s value must be either 0 or 1\n", TRACING_SIZE, env_ts);
+    //             exit(-1);
+    //         }
+    //         if (trace_record->enabled_ts[i] != vect[i]) {
+    //             trace_record->enabled_ts[i] = vect[i];
+    //             if (trace_record->enabled_ts[i] == 1) {
+    //                 log_info("%d enabled to trace %s\n", i, data_size_str[i]);
+    //             } else if (trace_record->enabled_ts[i] == 0) {
+    //                 log_info("%d disable to trace %s\n", i, data_size_str[i]);
+    //             }                
+    //         }            
+    //     }
+    // }
+
+
+    // for (int i = 0; i < 17; i++) {
+    //     DEBUG_TRACE("%d,\n",trace_record->enabled_ts[i]);
+    // }   
+
+    // entry_local_func--;
+
+    // return trace_record->enabled_ts[check_data_size(tracing_size)];
+
+    if (func == memcpy_func && check_data_size(tracing_size) > _2M_4M_ ) {
+        return true;
     }
 
-
-    for (int i = 0; i < 17; i++) {
-        DEBUG_TRACE("%d,\n",trace_record->enabled_ts[i]);
-    }   
-
-    entry_local_func--;
-
-    return trace_record->enabled_ts[check_data_size(tracing_size)];
+    return false;
 }
 
-void trace_stack(size_t tracing_size) {
+void trace_stack(mem_func_type func, size_t tracing_size) {
     entry_local_func++;
     pthread_mutex_lock(&trace_record->mutex);
     DEBUG_TRACE("---------------------------------------------------------\n", "");
     DEBUG_TRACE("tracing size: %d\n", tracing_size);
 
-    if (!is_able_to_trace(tracing_size)) {
+    if (!is_able_to_trace(func, tracing_size)) {
         pthread_mutex_unlock(&trace_record->mutex);
         return;
     }
@@ -741,7 +747,7 @@ void *memset(void *str, int c, size_t size) {
     DEBUG_MEMSET("memset(%d)\n", size); 
           
     #if ENABLE_TRACE
-    trace_stack(size);
+    trace_stack(memset_func,size);
     #endif
 
     char fmt[64];
@@ -817,7 +823,7 @@ void *memmove(void *str1, const void *str2, size_t size) {
     DEBUG_MEMMOVE("memmove(%d)\n", size);  
         
     #if ENABLE_TRACE
-    trace_stack(size);
+    trace_stack(memmove_func,size);
     #endif
 
     char fmt[64];
@@ -903,7 +909,7 @@ void *memcpy(void *str1, const void *str2, size_t size) {
     } 
     
     #if ENABLE_TRACE
-    trace_stack(size);
+    trace_stack(memcpy_func, size);
     #endif
 
     char fmt[64];
@@ -978,58 +984,61 @@ void* time_to_write_file(void *param) {
 #if ENABLE_TRACE
         pthread_mutex_lock(&trace_record->mutex);
 
-        if (is_turn_on_trace()) {
-            DEBUG_TIMER("timer write trace to file %s \n", function_trace_file_name.c_str()); 
-            function_trace_file = fopen(function_trace_file_name.c_str(),"a");
-            
-            DEBUG_TIMER("timer write trace 2\n", ""); 
-            for (int i = 0;i < trace_record->index; i++) {
-                // DEBUG_TIMER("timer write trace 3\n", ""); 
-                // DEBUG_TIMER("timer write trace 4\n", ""); 
-                // trace_record_t record = trace_record->record[i];            
-                DEBUG_TIMER("i: %d\n", i);
-                if (trace_record->record[i].function_stack == NULL) {
-                    DEBUG_TIMER("the i %d function statck is null, skipp\n", i);
-                    continue;
-                }
-                DEBUG_TIMER("time: %s\n", trace_record->record[i].time_buffer);
-                // DEBUG_TIMER("trace_record->record[index] address : %p\n", trace_record->record[i]);
-                DEBUG_TIMER("trace_record->record[index].function_stack address : %p\n", trace_record->record[i].function_stack);            
-                try {
-                DEBUG_TIMER("function_stack: %s\n", trace_record->record[i].function_stack);
-                }
-                catch (std::exception& e)
-                {
-                    std::cerr << "Exception caught : " << e.what() << std::endl;
-                }            
-                
-                char *t_buff = trace_record->record[i].time_buffer;
-                char *f_buff = trace_record->record[i].function_stack;
-                uint64_t size = trace_record->record[i].size;
-                DEBUG_TIMER("time: %s\n", t_buff);
-                DEBUG_TIMER("trace_record->record[index].function_stack address : %s\n", f_buff);   
-                DEBUG_TIMER("size: %d\n", size);        
-                // os << t_buff << "," << f_buff << "," << size;
-                DEBUG_TIMER("timer write trace 4.5\n", "");
-                //std::string str(os.str());
-                // DEBUG_TIMER("--->add line %s\n",os.str().c_str());
-                fprintf(function_trace_file, "%s,%s,%d\n", t_buff, f_buff, size);
-            }
-            
-            // DEBUG_TIMER("timer write trace 5\n", "");
+        // if (is_turn_on_trace()) {
 
-            // for (int ii = 0;ii < trace_record->index; ii++) {
-            //     //free(trace_record->record[ii].function_stack);
-            //     real_memset(trace_record->record[ii].function_stack, 0 , sizeof trace_record->record[ii].function_stack);
-            //     real_memset(trace_record->record[ii].time_buffer,0, sizeof trace_record->record[ii].time_buffer);
-            //     trace_record->record[ii].size = 0;            
-            // } 
-            trace_record->index = 0;     
-            fclose(function_trace_file);
-            // DEBUG_TIMER("timer write trace 6\n", ""); 
-            // pthread_mutex_unlock(&trace_record->mutex);
             
+        // }
+
+        DEBUG_TIMER("timer write trace to file %s \n", function_trace_file_name.c_str()); 
+        function_trace_file = fopen(function_trace_file_name.c_str(),"a");
+        
+        DEBUG_TIMER("timer write trace 2\n", ""); 
+        for (int i = 0;i < trace_record->index; i++) {
+            // DEBUG_TIMER("timer write trace 3\n", ""); 
+            // DEBUG_TIMER("timer write trace 4\n", ""); 
+            // trace_record_t record = trace_record->record[i];            
+            DEBUG_TIMER("i: %d\n", i);
+            if (trace_record->record[i].function_stack == NULL) {
+                DEBUG_TIMER("the i %d function statck is null, skipp\n", i);
+                continue;
+            }
+            DEBUG_TIMER("time: %s\n", trace_record->record[i].time_buffer);
+            // DEBUG_TIMER("trace_record->record[index] address : %p\n", trace_record->record[i]);
+            DEBUG_TIMER("trace_record->record[index].function_stack address : %p\n", trace_record->record[i].function_stack);            
+            try {
+            DEBUG_TIMER("function_stack: %s\n", trace_record->record[i].function_stack);
+            }
+            catch (std::exception& e)
+            {
+                std::cerr << "Exception caught : " << e.what() << std::endl;
+            }            
+            
+            char *t_buff = trace_record->record[i].time_buffer;
+            char *f_buff = trace_record->record[i].function_stack;
+            uint64_t size = trace_record->record[i].size;
+            DEBUG_TIMER("time: %s\n", t_buff);
+            DEBUG_TIMER("trace_record->record[index].function_stack address : %s\n", f_buff);   
+            DEBUG_TIMER("size: %d\n", size);        
+            // os << t_buff << "," << f_buff << "," << size;
+            DEBUG_TIMER("timer write trace 4.5\n", "");
+            //std::string str(os.str());
+            // DEBUG_TIMER("--->add line %s\n",os.str().c_str());
+            fprintf(function_trace_file, "%s,%s,%d\n", t_buff, f_buff, size);
         }
+        
+        // DEBUG_TIMER("timer write trace 5\n", "");
+
+        // for (int ii = 0;ii < trace_record->index; ii++) {
+        //     //free(trace_record->record[ii].function_stack);
+        //     real_memset(trace_record->record[ii].function_stack, 0 , sizeof trace_record->record[ii].function_stack);
+        //     real_memset(trace_record->record[ii].time_buffer,0, sizeof trace_record->record[ii].time_buffer);
+        //     trace_record->record[ii].size = 0;            
+        // } 
+        trace_record->index = 0;     
+        fclose(function_trace_file);
+        // DEBUG_TIMER("timer write trace 6\n", ""); 
+        // pthread_mutex_unlock(&trace_record->mutex);
+
         pthread_mutex_unlock(&trace_record->mutex);
         DEBUG_TIMER("timer finish writing trace\n", ""); 
 

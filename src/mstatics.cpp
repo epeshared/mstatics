@@ -496,7 +496,7 @@ static const char *data_size_str[] = {
 
 enum data_size check_data_size(size_t size) {
     enum data_size ds = invalid_data_size_type;
-    if (size > 1 && size <= 64) {
+    if (size >= 0 && size <= 64) {
         ds = _1_64_;
     } else if (size > 65 && size <= 128) {
         ds = _65_128_;
@@ -531,7 +531,6 @@ enum data_size check_data_size(size_t size) {
     } else if (size > 4 * 1024 * 1024) {
         ds = GR_4M;
     } else {
-        ds = GR_4M;
     }
     return ds;
 }

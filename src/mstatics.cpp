@@ -377,7 +377,7 @@ bool is_able_to_trace(mem_func_type func, size_t tracing_size) {
 
     // return trace_record->enabled_ts[check_data_size(tracing_size)];
 
-    if (func == memcpy_func && check_data_size(tracing_size) > _2M_4M_ ) {
+    if (func == memcpy_func && tracing_size > 4 * 1024 * 1024 ) {
         return true;
     }
 
@@ -392,6 +392,7 @@ void trace_stack(mem_func_type func, size_t tracing_size) {
 
     if (!is_able_to_trace(func, tracing_size)) {
         pthread_mutex_unlock(&trace_record->mutex);
+        entry_local_func--;
         return;
     }
 

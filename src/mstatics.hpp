@@ -141,8 +141,8 @@ typedef struct {
 typedef struct {
   trace_record_t record[MAX_RECORD_NUM];
   size_t index;
-  bool begin_trace;
-  int enabled_ts[17];
+  // bool begin_trace;
+  // int enabled_ts[GR_4M + 1];
   pthread_mutex_t mutex;
 } trace_data_t;
 

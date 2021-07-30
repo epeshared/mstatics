@@ -498,13 +498,13 @@ enum data_size check_data_size(size_t size) {
     enum data_size ds = invalid_data_size_type;
     if (size >= 0 && size <= 64) {
         ds = _1_64_;
-    } else if (size > 65 && size <= 128) {
+    } else if (size > 64 && size <= 128) {
         ds = _65_128_;
-    } else if (size > 129 && size <= 256) {
+    } else if (size > 128 && size <= 256) {
         ds = _129_256_;
-    } else if (size > 257 && size <= 512) {
+    } else if (size > 256 && size <= 512) {
         ds = _257_512_;
-    } else if (size > 513 && size <= 1 * 1024) {
+    } else if (size > 512 && size <= 1 * 1024) {
         ds = _513_1K_;
     } else if (size > 1 * 1024 && size <= 2 * 1024) {
         ds = _1K_2K_;
@@ -658,7 +658,7 @@ void *memset(void *str, int c, size_t size) {
     DEBUG_MEMSET("memset(%d)\n", size); 
           
     #if ENABLE_TRACE
-    if (size >= 4*1024*1024) {
+    if (size >= 4*1024) {
         trace_stack(size);
     }
     #endif
@@ -736,7 +736,7 @@ void *memmove(void *str1, const void *str2, size_t size) {
     DEBUG_MEMMOVE("memmove(%d)\n", size);  
         
     #if ENABLE_TRACE
-    if (size >= 4*1024*1024) {
+    if (size >= 4*1024) {
         trace_stack(size);
     }
     #endif
@@ -824,7 +824,7 @@ void *memcpy(void *str1, const void *str2, size_t size) {
     } 
     
     #if ENABLE_TRACE
-    if (size >= 4*1024*1024) {
+    if (size >= 4*1024) {
         trace_stack(size);
     }    
     #endif

@@ -518,7 +518,9 @@ enum data_size check_data_size(size_t size) {
         ds = _16K_32K_;
     } else if (size > 32 * 1024 && size <= 64 * 1024) {
         ds = _32K_64K_;
-    } else if (size > 128 * 1024 && size <= 256 * 1024) {
+    } else if (size > 64 * 1024 && size <= 128 * 1024) {
+        ds = _64K_128K_;
+    }  else if (size > 128 * 1024 && size <= 256 * 1024) {
         ds = _128K_256K_;
     } else if (size > 256 * 1024 && size <= 512 * 1024) {
         ds = _256K_512K_;
@@ -537,7 +539,7 @@ enum data_size check_data_size(size_t size) {
     return ds;
 }
 
-// static char function_trace_header[] = "function,1-64,65-128,129-256,257-512,513-1K,1K-2K,2K-4K,4K-8K,8K-16K,16K-32K,32K-64K,128K-256K,256K-512K,512K-1M,1M-2M,2M-4M,>4M";
+// static char function_trace_header[] = "function,1-64,65-128,129-256,257-512,513-1K,1K-2K,2K-4K,4K-8K,8K-16K,16K-32K,32K-64K,64K-128K,128K-256K,256K-512K,512K-1M,1M-2M,2M-4M,>4M";
 
 int write_to_memory_usage_file_and_clean() {
     entry_local_func++;

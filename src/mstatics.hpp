@@ -103,12 +103,13 @@ typedef enum data_size {
     _8K_16K_,
     _16K_32K_,
     _32K_64K_,
+    _64K_128K_,
     _128K_256K_,
     _256K_512K_,
     _512K_1M_,
     _1M_2M_,
     _2M_4M_,
-    GR_4M = 16,
+    GR_4M ,
     invalid_data_size_type = 1000
 }data_size_type;
 
@@ -202,9 +203,9 @@ static const char* TIMER_TO_LOG = "TIMER_TO_LOG";
 static const char* BEGINE_TO_TRACE = "BEGINE_TO_TRACE";
 
 // The tracing size vriable should be an array to indicate which size sould be traced, 
-// the array is 0-1 value for {"1_64", "65_128", "129_256", "257_512", "513_1K", "1K_2K", "2K_4K","4K_8K", "8K_16K", "16K_32K", "32K_64K", "128K_256K", "256K_512K", "512K_1M", "1M_2M", "2M_4M", ">4M"}
+// the array is 0-1 value for {"1_64", "65_128", "129_256", "257_512", "513_1K", "1K_2K", "2K_4K","4K_8K", "8K_16K", "16K_32K", "32K_64K", "64K_128K", "128K_256K", "256K_512K", "512K_1M", "1M_2M", "2M_4M", ">4M"}
 //eg. 
-// "1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1" indicate _1_64_ and >4M size should be traced
+// "1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1" indicate _1_64_ and >4M size should be traced
 static const char* TRACING_SIZE = "TRACING_SIZE";
 
 static memory_usage_t* memory_usage_data = NULL;

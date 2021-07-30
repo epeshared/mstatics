@@ -16,7 +16,6 @@
 #include <errno.h>
 #include <execinfo.h>
 #include <threads.h>
-#include <vector>
 
 #include <mutex>
 #include <thread>
@@ -135,10 +134,6 @@ int initialise_trace_data() {
     
 
     trace_record->index = 0;
-    // trace_record->begin_trace = false;
-    // for (int i = 0 ; i < GR_4M + 1; i++) {
-    //     trace_record->enabled_ts[i] = 1;
-    // }
 
     // initialise mutex so it works properly in shared memory
     pthread_mutexattr_t attr;
@@ -292,114 +287,18 @@ int initialize() {
 
     pthread_mutex_unlock(&init_data->mutex);
 
-    DEBUG_INIT("pid %s finished started time\n", pid.c_str());    
-
     entry_local_func--;
-    sleep(3);
     return 0;
 }
 
 
 /********************** stack trace **********************/
 
-// bool is_turn_on_trace() {
-//     entry_local_func++;
-//     const char* env_p = std::getenv(BEGINE_TO_TRACE);
-//     if (env_p == NULL) {
-//          DEBUG_TRACE("%s is NULL \n", BEGINE_TO_TRACE);
-//          if (trace_record->begin_trace == true) {
-//              trace_record->begin_trace = false;
-//             log_info("Turn off tracing\n", "");   
-//          }         
-//          return false; 
-//     }
-
-//     if ((env_p[0] == '\0')) {
-//         DEBUG_TRACE("%s is empty\n", BEGINE_TO_TRACE);
-//          if (trace_record->begin_trace == true) {
-//             trace_record->begin_trace = false;
-//             log_info("Turn off tracing\n", "");   
-//          }          
-//         return false; 
-//     }
-//     entry_local_func--;
-//     return true;
-// }
-
-bool is_able_to_trace(mem_func_type func, size_t tracing_size) {
-    // entry_local_func++;
-    // if (!is_turn_on_trace()) {
-    //     return false;
-    // }
-
-    // if (trace_record->begin_trace == false) {
-    //     trace_record->begin_trace = true;
-    //     log_info("Turn on tracing\n", "");   
-    // }      
-    
-    // const char* env_ts = std::getenv(TRACING_SIZE);
-    // if (env_ts != NULL && (env_ts[0] != '\0')) {
-    //     DEBUG_TRACE("%s is %s\n", TRACING_SIZE, env_ts);
-    //     std::vector<int> vect; 
-
-    //     std::stringstream ss(env_ts);
-
-    //     // log_info("------------------------------\n", "");
-    //     for (int i; ss >> i;) {
-    //         // log_info("push back %d\n", i);
-    //         vect.push_back(i);    
-    //         if (ss.peek() == ',' || ss.peek() == ' ')
-    //             ss.ignore();
-    //     }
-    //     // log_info("vec size %d\n", vect.size());
-    //     // log_info("------------------------------\n", "");
-
-    //     for (std::size_t i = 0; i < vect.size(); i++) {
-    //         // log_info("%d in TRACING_SIZE is %d\n", i, vect[i]);
-    //         if (vect[i] != 1 && vect[i] != 0) {
-    //             log_error("%s array %s value must be either 0 or 1\n", TRACING_SIZE, env_ts);
-    //             exit(-1);
-    //         }
-    //         if (trace_record->enabled_ts[i] != vect[i]) {
-    //             trace_record->enabled_ts[i] = vect[i];
-    //             if (trace_record->enabled_ts[i] == 1) {
-    //                 log_info("%d enabled to trace %s\n", i, data_size_str[i]);
-    //             } else if (trace_record->enabled_ts[i] == 0) {
-    //                 log_info("%d disable to trace %s\n", i, data_size_str[i]);
-    //             }                
-    //         }            
-    //     }
-    // }
-
-
-    // for (int i = 0; i < 17; i++) {
-    //     DEBUG_TRACE("%d,\n",trace_record->enabled_ts[i]);
-    // }   
-
-    // entry_local_func--;
-
-    // return trace_record->enabled_ts[check_data_size(tracing_size)];
-
-    if (func == memcpy_func && tracing_size > 4 * 1024 * 1024 ) {
-        return true;
-    }
-
-    return false;
-}
-
-void trace_stack(mem_func_type func, size_t tracing_size) {
+void trace_stack(size_t tracing_size) {
     entry_local_func++;
     pthread_mutex_lock(&trace_record->mutex);
     DEBUG_TRACE("---------------------------------------------------------\n", "");
-    DEBUG_TRACE("tracing size: %d\n", tracing_size);
 
-    if (!is_able_to_trace(func, tracing_size)) {
-        pthread_mutex_unlock(&trace_record->mutex);
-        entry_local_func--;
-        return;
-    }
-
-    DEBUG_TRACE("tracing size: %d is able to be traced\n", tracing_size);
 
     std::string call_statck="";
     #if BOOST_BACKTRACE        
@@ -586,6 +485,14 @@ static const char *level_strings[] = {
 };
 
 
+static const char *data_size_str[] = {
+    "1_64", "65_128", "129_256", "257_512",
+    "513_1K", "1K_2K", "2K_4K","4K_8K", "8K_16K",
+    "16K_32K", "32K_64K", "128K_256K", "256K_512K",
+    "512K_1M", "1M_2M", "2M_4M", ">4M"
+};
+
+
 /********************** util function ***************/
 
 enum data_size check_data_size(size_t size) {
@@ -625,7 +532,7 @@ enum data_size check_data_size(size_t size) {
     } else if (size > 4 * 1024 * 1024) {
         ds = GR_4M;
     } else {
-        // ds = GR_4M;
+        ds = GR_4M;
     }
     return ds;
 }
@@ -714,7 +621,6 @@ int write_to_memory_usage_file_and_clean() {
     } 
     #endif
     fclose(memory_usage_file);
-    DEBUG_FILE("finished writing to file:%s\n", memory_usage_file_name.c_str());
     entry_local_func--;
 
     return 0;
@@ -752,7 +658,7 @@ void *memset(void *str, int c, size_t size) {
     DEBUG_MEMSET("memset(%d)\n", size); 
           
     #if ENABLE_TRACE
-    trace_stack(memset_func,size);
+    trace_stack(size);
     #endif
 
     char fmt[64];
@@ -790,7 +696,6 @@ void *memset(void *str, int c, size_t size) {
     DEBUG_MEMSET("index %d\n",memory_usage_data->index);
 
     if (memory_usage_data->index >= MAX_RECORD_NUM) {
-        DEBUG_FILE("memory_usage_data->index >= MAX_RECORD_NUM, writing to file\n","");
         write_to_memory_usage_file_and_clean();
         for (int i = 0;i < memory_usage_data->index; i++) {
             //memmory_usage_record_t record = memory_usage_data->record[i];
@@ -800,7 +705,6 @@ void *memset(void *str, int c, size_t size) {
             real_memset( memory_usage_data->record[i].type, 0, sizeof  memory_usage_data->record[i].type);         
         }        
         memory_usage_data->index = 0;
-         DEBUG_FILE("finish memory_usage_data->index >= MAX_RECORD_NUM, writing to file\n","");
     }
 
     pthread_mutex_unlock(&memory_usage_data->mutex);
@@ -830,7 +734,7 @@ void *memmove(void *str1, const void *str2, size_t size) {
     DEBUG_MEMMOVE("memmove(%d)\n", size);  
         
     #if ENABLE_TRACE
-    trace_stack(memmove_func,size);
+    trace_stack(size);
     #endif
 
     char fmt[64];
@@ -869,7 +773,6 @@ void *memmove(void *str1, const void *str2, size_t size) {
     DEBUG_MEMMOVE("index %d\n",memory_usage_data->index);
 
     if (memory_usage_data->index >= MAX_RECORD_NUM) {
-        DEBUG_FILE("memory_usage_data->index >= MAX_RECORD_NUM, writing to file\n","");
         write_to_memory_usage_file_and_clean();
         for (int i = 0;i < memory_usage_data->index; i++) {
             //memmory_usage_record_t record = memory_usage_data->record[i];
@@ -879,7 +782,6 @@ void *memmove(void *str1, const void *str2, size_t size) {
             real_memset( memory_usage_data->record[i].type, 0, sizeof  memory_usage_data->record[i].type);         
         }        
         memory_usage_data->index = 0;
-        DEBUG_FILE("finish memory_usage_data->index >= MAX_RECORD_NUM, writing to file\n","");
     }
 
     pthread_mutex_unlock(&memory_usage_data->mutex);
@@ -918,7 +820,7 @@ void *memcpy(void *str1, const void *str2, size_t size) {
     } 
     
     #if ENABLE_TRACE
-    trace_stack(memcpy_func, size);
+    trace_stack(size);
     #endif
 
     char fmt[64];
@@ -956,7 +858,6 @@ void *memcpy(void *str1, const void *str2, size_t size) {
     DEBUG_MEMCPY("index %d\n",memory_usage_data->index);
 
     if (memory_usage_data->index >= MAX_RECORD_NUM) {
-        DEBUG_FILE("memory_usage_data->index >= MAX_RECORD_NUM, writing to file\n","");
         write_to_memory_usage_file_and_clean();
         for (int i = 0;i < memory_usage_data->index; i++) {
             //memmory_usage_record_t record = memory_usage_data->record[i];
@@ -966,7 +867,6 @@ void *memcpy(void *str1, const void *str2, size_t size) {
             real_memset( memory_usage_data->record[i].type, 0, sizeof  memory_usage_data->record[i].type);         
         }
         memory_usage_data->index = 0;
-        DEBUG_FILE("finish memory_usage_data->index >= MAX_RECORD_NUM, writing to file\n","");
     }
 
     pthread_mutex_unlock(&memory_usage_data->mutex);
@@ -994,19 +894,13 @@ void* time_to_write_file(void *param) {
 
 #if ENABLE_TRACE
         pthread_mutex_lock(&trace_record->mutex);
-
-        // if (is_turn_on_trace()) {
-
-            
-        // }
-
-        DEBUG_TIMER("timer write trace to file %s \n", function_trace_file_name.c_str()); 
+        DEBUG_TIMER("timer write trace\n", ""); 
         function_trace_file = fopen(function_trace_file_name.c_str(),"a");
         
         DEBUG_TIMER("timer write trace 2\n", ""); 
         for (int i = 0;i < trace_record->index; i++) {
-            // DEBUG_TIMER("timer write trace 3\n", ""); 
-            // DEBUG_TIMER("timer write trace 4\n", ""); 
+            DEBUG_TIMER("timer write trace 3\n", ""); 
+            DEBUG_TIMER("timer write trace 4\n", ""); 
             // trace_record_t record = trace_record->record[i];            
             DEBUG_TIMER("i: %d\n", i);
             if (trace_record->record[i].function_stack == NULL) {
@@ -1017,7 +911,7 @@ void* time_to_write_file(void *param) {
             // DEBUG_TIMER("trace_record->record[index] address : %p\n", trace_record->record[i]);
             DEBUG_TIMER("trace_record->record[index].function_stack address : %p\n", trace_record->record[i].function_stack);            
             try {
-            DEBUG_TIMER("function_stack: %s\n", trace_record->record[i].function_stack);
+               DEBUG_TIMER("function_stack: %s\n", trace_record->record[i].function_stack);
             }
             catch (std::exception& e)
             {
@@ -1037,7 +931,7 @@ void* time_to_write_file(void *param) {
             fprintf(function_trace_file, "%s,%s,%d\n", t_buff, f_buff, size);
         }
         
-        // DEBUG_TIMER("timer write trace 5\n", "");
+        DEBUG_TIMER("timer write trace 5\n", "");
 
         // for (int ii = 0;ii < trace_record->index; ii++) {
         //     //free(trace_record->record[ii].function_stack);
@@ -1047,12 +941,9 @@ void* time_to_write_file(void *param) {
         // } 
         trace_record->index = 0;     
         fclose(function_trace_file);
-        // DEBUG_TIMER("timer write trace 6\n", ""); 
-        // pthread_mutex_unlock(&trace_record->mutex);
-        DEBUG_TIMER("timer finish writing trace\n", ""); 
+        DEBUG_TIMER("timer write trace 6\n", ""); 
         pthread_mutex_unlock(&trace_record->mutex);
-        
-
+        DEBUG_TIMER("timer finish writing trace\n", ""); 
 #endif        
         usleep(triger * 1000);
     }    

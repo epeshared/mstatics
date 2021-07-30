@@ -91,13 +91,6 @@
 
 #define MAX_RECORD_NUM 20000
 
-static const char *data_size_str[] = {
-    "1_64", "65_128", "129_256", "257_512",
-    "513_1K", "1K_2K", "2K_4K","4K_8K", "8K_16K",
-    "16K_32K", "32K_64K", "128K_256K", "256K_512K",
-    "512K_1M", "1M_2M", "2M_4M", ">4M"
-};
-
 typedef enum data_size {
     _1_64_,
     _65_128_,
@@ -147,8 +140,8 @@ typedef struct {
 typedef struct {
   trace_record_t record[MAX_RECORD_NUM];
   size_t index;
-  // bool begin_trace;
-  // int enabled_ts[17];
+  bool begin_trace;
+  int enabled_ts[17];
   pthread_mutex_t mutex;
 } trace_data_t;
 
@@ -227,13 +220,5 @@ static int _ignore_init = initialise_init_data();
 // static int _ignore_timer = initialise_timer();
 
 static int _ignore = initialize();
-
-typedef enum mem_func_type {
-  memcpy_func,
-  memset_func,
-  memmove_func
-} mem_func;
-
-void trace_stack(mem_func_type func, size_t tracing_size);
 
 #endif

@@ -299,9 +299,9 @@ void trace_stack(mem_func_type mem_func, size_t tracing_size) {
     pthread_mutex_lock(&trace_record->mutex);
     DEBUG_TRACE("---------------------------------------------------------\n", "");
 
-    // if (!(mem_func == memory_copy && tracing_size >= 4*1024*1024)) {
-    //     return;
-    // }
+    if (mem_func != memory_copy) {
+        return;
+    }
 
     std::string call_statck="";
     #if BOOST_BACKTRACE        

@@ -800,6 +800,7 @@ void *memset(void *str, int c, size_t size) {
             real_memset( memory_usage_data->record[i].type, 0, sizeof  memory_usage_data->record[i].type);         
         }        
         memory_usage_data->index = 0;
+         DEBUG_FILE("finish memory_usage_data->index >= MAX_RECORD_NUM, writing to file\n","");
     }
 
     pthread_mutex_unlock(&memory_usage_data->mutex);
@@ -878,6 +879,7 @@ void *memmove(void *str1, const void *str2, size_t size) {
             real_memset( memory_usage_data->record[i].type, 0, sizeof  memory_usage_data->record[i].type);         
         }        
         memory_usage_data->index = 0;
+        DEBUG_FILE("finish memory_usage_data->index >= MAX_RECORD_NUM, writing to file\n","");
     }
 
     pthread_mutex_unlock(&memory_usage_data->mutex);
@@ -964,6 +966,7 @@ void *memcpy(void *str1, const void *str2, size_t size) {
             real_memset( memory_usage_data->record[i].type, 0, sizeof  memory_usage_data->record[i].type);         
         }
         memory_usage_data->index = 0;
+        DEBUG_FILE("finish memory_usage_data->index >= MAX_RECORD_NUM, writing to file\n","");
     }
 
     pthread_mutex_unlock(&memory_usage_data->mutex);

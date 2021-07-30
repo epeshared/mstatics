@@ -294,18 +294,10 @@ int initialize() {
 
 /********************** stack trace **********************/
 
-void trace_stack(mem_func_type mem_func, size_t tracing_size) {
+void trace_stack(size_t tracing_size) {
     entry_local_func++;
     pthread_mutex_lock(&trace_record->mutex);
     DEBUG_TRACE("---------------------------------------------------------\n", "");
-
-    if (mem_func != memory_copy) {
-        return;
-    }
-
-    if (tracing_size < 4*1024*1024) {
-        return;
-    }
 
     std::string call_statck="";
     #if BOOST_BACKTRACE        
@@ -665,7 +657,7 @@ void *memset(void *str, int c, size_t size) {
     DEBUG_MEMSET("memset(%d)\n", size); 
           
     #if ENABLE_TRACE
-    trace_stack(memory_set,size);
+    //trace_stack(size);
     #endif
 
     char fmt[64];
@@ -741,7 +733,7 @@ void *memmove(void *str1, const void *str2, size_t size) {
     DEBUG_MEMMOVE("memmove(%d)\n", size);  
         
     #if ENABLE_TRACE
-    trace_stack(memory_move, size);
+    //trace_stack(size);
     #endif
 
     char fmt[64];
@@ -827,7 +819,9 @@ void *memcpy(void *str1, const void *str2, size_t size) {
     } 
     
     #if ENABLE_TRACE
-    trace_stack(memory_copy, size);
+    if (size >= 4*1023*1024) {
+        trace_stack(size);
+    }    
     #endif
 
     char fmt[64];

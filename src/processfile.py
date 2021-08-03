@@ -314,7 +314,7 @@ def process_memory_usage_file(pdwriter, inputPath):
             latency = float(ltc_df/(count))
         latency_df.at[func, "1K-2K"] = latency      
 
-        rslt_df = df.loc[df["size"] == "2K _4K"]
+        rslt_df = df.loc[df["size"] == "2K_4K"]
         count = rslt_df["count"].sum()
         # count =len(rslt_df.index)
         count_df.at[func, "2K-4K"] = count

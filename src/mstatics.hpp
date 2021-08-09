@@ -12,73 +12,108 @@
 #define gettid() syscall(SYS_gettid)
 #endif
 
+static const char* MSTATICS_OUT_DIR = "MSTATICS_OUT_DIR";
+static FILE *log_file = NULL;
+
+int initialize_log() {
+    printf("initialize log\n");
+    char* tmp_out_dir = getenv (MSTATICS_OUT_DIR);
+    printf("tmp_out_dir: %s\n", tmp_out_dir);
+    printf("initialize log 2\n");
+    char out_dir[128];
+    char* default_dir = "./";
+    if (tmp_out_dir != NULL) {
+      printf("initialize log 2.1\n");
+      strcpy(out_dir, tmp_out_dir);
+    } else {
+      printf("initialize log 2.2\n");
+      strcpy(out_dir, default_dir);
+    }
+
+    printf("initialize log 3\n");
+
+    char rel_log_file_name[256];
+    char* _log_file_name = "//mstatics.log";
+    strcpy(rel_log_file_name, out_dir);
+    strcat(rel_log_file_name, _log_file_name);
+    printf("rel_log_file_name: %s\n", rel_log_file_name);
+    printf("initialize log 4\n");
+    log_file = fopen(rel_log_file_name,"a+");
+    printf("initialize log 5\n");
+    if (log_file== NULL) {
+        printf("Error opening log file!\n" ,"");
+        exit(1);
+    }       
+}
+
+static int _ignore_log = initialize_log();
 
 #define log_info(fmt, ...) \
-    do {fprintf(stderr, "[THREAD:%d INFO] %s:%d:%s(): " fmt, gettid(), __FILE__, \
+    do {fprintf(log_file, "[THREAD:%d INFO] %s:%d:%s(): " fmt, gettid(), __FILE__, \
         __LINE__, __func__, __VA_ARGS__); } while (0)
 
 #define log_error(fmt, ...) \
-    do {fprintf(stderr, "[THREAD:%d ERROR] %s:%d:%s(): " fmt, gettid(), __FILE__, \
+    do {fprintf(log_file, "[THREAD:%d ERROR] %s:%d:%s(): " fmt, gettid(), __FILE__, \
         __LINE__, __func__, __VA_ARGS__); } while (0)
 
 #define DEBUG 0
 #define log_log(fmt, ...) \
-    do { if (DEBUG) fprintf(stderr, "[THREAD:%d] %s:%d:%s(): " fmt, gettid(), __FILE__, \
+    do { if (DEBUG) fprintf(log_file, "[THREAD:%d] %s:%d:%s(): " fmt, gettid(), __FILE__, \
         __LINE__, __func__, __VA_ARGS__); } while (0)
 
 #define LOG_INIT 1
 #ifdef LOG_INIT
 #define DEBUG_INIT(fmt, ...) \
-    do { if (LOG_INIT) fprintf(stderr, "[INIT][THREAD:%d]  %s:%d:%s(): " fmt, gettid(), __FILE__, \
+    do { if (LOG_INIT) fprintf(log_file, "[INIT][THREAD:%d]  %s:%d:%s(): " fmt, gettid(), __FILE__, \
         __LINE__, __func__, __VA_ARGS__); } while (0)      
 #endif         
 
 #define LOG_MALLOC 0
 #ifdef LOG_MALLOC
 #define DEBUG_MALLOC(fmt, ...) \
-    do { if (LOG_MALLOC) {fprintf(stderr, "[MALLOC][THREAD:%d] %s:%d:%s(): " fmt, gettid(), __FILE__, \
+    do { if (LOG_MALLOC) {fprintf(log_file, "[MALLOC][THREAD:%d] %s:%d:%s(): " fmt, gettid(), __FILE__, \
         __LINE__, __func__, __VA_ARGS__); }} while (0)      
 #endif 
 
-#define LOG_FILE 0
+#define LOG_FILE 1
 #ifdef LOG_FILE
 #define DEBUG_FILE(fmt, ...) \
-    do { if (LOG_FILE) fprintf(stderr, "[FILE][THREAD:%d]  %s:%d:%s(): " fmt, gettid(), __FILE__, \
+    do { if (LOG_FILE) fprintf(log_file, "[FILE][THREAD:%d]  %s:%d:%s(): " fmt, gettid(), __FILE__, \
         __LINE__, __func__, __VA_ARGS__); } while (0)      
 #endif 
 
 #define LOG_TIMER 0
 #ifdef LOG_TIMER
 #define DEBUG_TIMER(fmt, ...) \
-    do { if (LOG_TIMER) fprintf(stderr, "[TIMER][THREAD:%d]  %s:%d:%s(): " fmt, gettid(), __FILE__, \
+    do { if (LOG_TIMER) fprintf(log_file, "[TIMER][THREAD:%d]  %s:%d:%s(): " fmt, gettid(), __FILE__, \
         __LINE__, __func__, __VA_ARGS__); } while (0)      
 #endif 
 
 #define LOG_TRACE 0
 #ifdef LOG_TRACE
 #define DEBUG_TRACE(fmt, ...) \
-    do { if (LOG_TRACE) fprintf(stderr, "[TRACE][THREAD:%d]  %s:%d:%s(): " fmt, gettid(), __FILE__, \
+    do { if (LOG_TRACE) fprintf(log_file, "[TRACE][THREAD:%d]  %s:%d:%s(): " fmt, gettid(), __FILE__, \
         __LINE__, __func__, __VA_ARGS__); } while (0)      
 #endif 
 
-#define LOG_MEMSET 0
+#define LOG_MEMSET 1
 #ifdef LOG_MEMSET
 #define DEBUG_MEMSET(fmt, ...) \
-    do { if (LOG_MEMSET) fprintf(stderr, "[MEMSET][THREAD:%d]  %s:%d:%s(): " fmt, gettid(), __FILE__, \
+    do { if (LOG_MEMSET) fprintf(log_file, "[MEMSET][THREAD:%d]  %s:%d:%s(): " fmt, gettid(), __FILE__, \
         __LINE__, __func__, __VA_ARGS__); } while (0)      
 #endif
 
-#define LOG_MEMMOVE 0
+#define LOG_MEMMOVE 1
 #ifdef LOG_MEMMOVE
 #define DEBUG_MEMMOVE(fmt, ...) \
-    do { if (LOG_MEMMOVE) fprintf(stderr, "[MEMMOVE][THREAD:%d]  %s:%d:%s(): " fmt, gettid(), __FILE__, \
+    do { if (LOG_MEMMOVE) fprintf(log_file, "[MEMMOVE][THREAD:%d]  %s:%d:%s(): " fmt, gettid(), __FILE__, \
         __LINE__, __func__, __VA_ARGS__); } while (0)      
 #endif 
 
-#define LOG_MEMCPY 0
+#define LOG_MEMCPY 1
 #ifdef LOG_MEMCPY
 #define DEBUG_MEMCPY(fmt, ...) \
-    do { if (LOG_MEMCPY) fprintf(stderr, "[LOG_MEMCPY][THREAD:%d]  %s:%d:%s(): " fmt, gettid(), __FILE__, \
+    do { if (LOG_MEMCPY) fprintf(log_file, "[LOG_MEMCPY][THREAD:%d]  %s:%d:%s(): " fmt, gettid(), __FILE__, \
         __LINE__, __func__, __VA_ARGS__); } while (0)      
 #endif 
 
@@ -198,7 +233,6 @@ static int file_is_opened = 0;
 static bool timer_is_activated = false;
 thread_local int entry_local_func = 0;
 
-static const char* MSTATICS_OUT_DIR = "MSTATICS_OUT_DIR";
 static const char* TIMER_TO_LOG = "TIMER_TO_LOG";
 static const char* BEGINE_TO_TRACE = "BEGINE_TO_TRACE";
 

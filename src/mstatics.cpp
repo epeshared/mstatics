@@ -191,6 +191,11 @@ bool is_initialized() {
     // if (!init_data) {
     //     initialise_init_data();
     // }
+    if (init_data == NULL) {
+        entry_local_func--;
+        return false;
+    }
+
     pthread_mutex_lock(&init_data->mutex);
     bool ret = false;
     if (init_data->init) {

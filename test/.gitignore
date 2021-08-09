@@ -57,4 +57,5 @@ dkms.conf
 *.csv
 *.xlsx
 mtest
+*.log
 

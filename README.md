@@ -33,4 +33,5 @@ Also the tool is able to report the memory function trace stack:
 
 ## Known Issue
 * If function trace feature is turn on and run the mstatics for MySQL, The startup is very slow due to "dladdr" for trace is the bottelneck
+* Since clickhouse replace the glic memcpy by its own memcpy function, we must use the https://github.com/epeshared/dsa_osd/blob/main/clickhouse/memcpy.cpp file to replace the clickhouse memcpy file and then recompile the clickhouse to profile the memcpy
 

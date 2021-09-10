@@ -802,7 +802,7 @@ void *memmove(void *str1, const void *str2, size_t size) {
 }
 
 
-void *memcpy(void *str1, const void *str2, size_t size) {   
+void *memcpy(void *str1, const void *str2, size_t size) { 
 
     if (entry_local_func) {
         //DEBUG_MEMCPY("Local memcpy(%d) \n", size); 

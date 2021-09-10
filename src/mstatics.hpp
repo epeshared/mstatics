@@ -96,21 +96,21 @@ static int _ignore_log = initialize_log();
         __LINE__, __func__, __VA_ARGS__); } while (0)      
 #endif 
 
-#define LOG_MEMSET 1
+#define LOG_MEMSET 0
 #ifdef LOG_MEMSET
 #define DEBUG_MEMSET(fmt, ...) \
     do { if (LOG_MEMSET) fprintf(log_file, "[MEMSET][THREAD:%d]  %s:%d:%s(): " fmt, gettid(), __FILE__, \
         __LINE__, __func__, __VA_ARGS__); } while (0)      
 #endif
 
-#define LOG_MEMMOVE 1
+#define LOG_MEMMOVE 0
 #ifdef LOG_MEMMOVE
 #define DEBUG_MEMMOVE(fmt, ...) \
     do { if (LOG_MEMMOVE) fprintf(log_file, "[MEMMOVE][THREAD:%d]  %s:%d:%s(): " fmt, gettid(), __FILE__, \
         __LINE__, __func__, __VA_ARGS__); } while (0)      
 #endif 
 
-#define LOG_MEMCPY 1
+#define LOG_MEMCPY 0
 #ifdef LOG_MEMCPY
 #define DEBUG_MEMCPY(fmt, ...) \
     do { if (LOG_MEMCPY) fprintf(log_file, "[LOG_MEMCPY][THREAD:%d]  %s:%d:%s(): " fmt, gettid(), __FILE__, \
